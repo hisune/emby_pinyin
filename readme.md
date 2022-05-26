@@ -11,10 +11,13 @@
 4. 选择要处理的媒体库
 5. 等待处理完成
 
+![](https://raw.githubusercontent.com/hisune/images/master/emby_pinyin_2.jpg)
+
+
 ### 使用效果
 ![](https://raw.githubusercontent.com/hisune/images/master/emby_pinyin_1.jpg)
 
-### 打包
+### 二次开发打包
 ```sh
 php pack.php
 ```
