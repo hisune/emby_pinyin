@@ -1,0 +1,7 @@
+/vendor
+src/composer.lock
+/.idea
+/bin
+/var
+app.phar
+/src/vendor

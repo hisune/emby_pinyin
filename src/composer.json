@@ -1,0 +1,35 @@
+{
+    "name": "hisune/emby_pinyin",
+    "type": "project",
+    "keywords": ["emby", "pinyin"],
+    "description": "Let emby support pinyin sorting",
+    "homepage": "https://hisune.com",
+    "license": "Apache-2.0",
+    "support": {
+        "email": "hi@hisune.com",
+        "issues": "https://github.com/hisune/emby2pinyin/issues",
+        "source": "https://github.com/hisune/emby2pinyin"
+    },
+    "require": {
+        "php": ">=7.2.0",
+        "overtrue/pinyin": "^4.0",
+        "ext-json": "*",
+        "guzzlehttp/guzzle": "^7.4"
+    },
+    "authors": [
+        {
+            "name": "Hisune",
+            "email": "hi@hisune.com",
+            "homepage": "https://hisune.com",
+            "role": "Developer"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        },
+        "files": [
+          "app/Functions.php"
+        ]
+    }
+}
