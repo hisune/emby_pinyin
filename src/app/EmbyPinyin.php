@@ -191,7 +191,7 @@ by: hisune.com        |_____|______|__|             |_____|
                 $itemDetail = $this->sendRequest("Users/{$this->user['Id']}/Items/{$item['Id']}");
                 $pinyinAbbr = $this->pinyin->abbr($itemDetail['Name']);
                 if($itemDetail['SortName'] == $pinyinAbbr){
-                    logger('跳过：' . $itemDetail['Name']);
+                    logger('跳过：' . $itemDetail['Name'], false);
                 }else{
                     $itemDetail['SortName'] = $pinyinAbbr;
                     $itemDetail['ForcedSortName'] = $pinyinAbbr;
