@@ -172,12 +172,20 @@ by: hisune.com        |_____|______|__|             |_____|
 
             $ask = ask("是否处理此媒体库 【{$item['Name']}】 下的所有媒体？(y/n)");
             if($ask == 'y'){
+                $this->initCount();
                 logger("开始处理 【{$item['Name']}】");
                 $this->renderFolder($item['Id']);
+                logger("已跳过：{$this->skipCount}，已处理：{$this->processCount}");
             }else{
                 logger("跳过 【{$item['Name']}】", false);
             }
         }
+    }
+
+    private function initCount()
+    {
+        $this->processCount = 0;
+        $this->skipCount = 0;
     }
 
     private function renderFolder($id)
