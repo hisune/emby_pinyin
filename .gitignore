@@ -5,3 +5,4 @@ src/composer.lock
 /var
 app.phar
 /src/vendor
+emby.exe
