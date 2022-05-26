@@ -5,7 +5,7 @@
 ### 使用方法
 > 当前支持windows
 
-1. 下载：release
+1. 下载：[release](https://github.com/hisune/emby_pinyin/releases)
 2. 打开emby.exe
 3. 输入服务器地址、API密钥
 4. 选择要处理的媒体库
