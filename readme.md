@@ -6,7 +6,7 @@
 > 当前支持windows
 
 1. 下载：[release](https://github.com/hisune/emby_pinyin/releases)
-2. 打开emby.exe
+2. 解压后打开文件夹里面的emby.exe
 3. 输入你的emby服务器地址、API密钥（首次输入后，下次可不用输入，直接选择）
 4. 选择要处理的媒体库
 5. 等待处理完成
