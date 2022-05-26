@@ -14,6 +14,7 @@ class EmbyPinyin
     protected $selectedByInput = false;
     protected $user;
     protected $items;
+    protected $skipCount = 0;
     protected $processCount = 0;
 
     public function __construct()
@@ -192,6 +193,7 @@ by: hisune.com        |_____|______|__|             |_____|
                 $pinyinAbbr = $this->pinyin->abbr($itemDetail['Name']);
                 if($itemDetail['SortName'] == $pinyinAbbr){
                     logger('跳过：' . $itemDetail['Name'], false);
+                    $this->skipCount++;
                 }else{
                     $itemDetail['SortName'] = $pinyinAbbr;
                     $itemDetail['ForcedSortName'] = $pinyinAbbr;
@@ -200,7 +202,7 @@ by: hisune.com        |_____|______|__|             |_____|
                     $this->sendRequest("/Items/{$item['Id']}", [], $itemDetail);
                     $this->processCount++;
                 }
-                echo "已处理：{$this->processCount}\r";
+                echo "已跳过：{$this->skipCount}，已处理：{$this->processCount}\r";
             }
         }
     }
