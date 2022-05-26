@@ -190,12 +190,16 @@ by: hisune.com        |_____|______|__|             |_____|
                 // 获取item详情
                 $itemDetail = $this->sendRequest("Users/{$this->user['Id']}/Items/{$item['Id']}");
                 $pinyinAbbr = $this->pinyin->abbr($itemDetail['Name']);
-                $itemDetail['SortName'] = $pinyinAbbr;
-                $itemDetail['ForcedSortName'] = $pinyinAbbr;
-                $itemDetail['LockedFields'] = ['SortName'];
-                // 修改
-                $this->sendRequest("/Items/{$item['Id']}", [], $itemDetail);
-                $this->processCount++;
+                if($itemDetail['SortName'] == $pinyinAbbr){
+                    logger('跳过：' . $itemDetail['Name']);
+                }else{
+                    $itemDetail['SortName'] = $pinyinAbbr;
+                    $itemDetail['ForcedSortName'] = $pinyinAbbr;
+                    $itemDetail['LockedFields'] = ['SortName'];
+                    // 修改
+                    $this->sendRequest("/Items/{$item['Id']}", [], $itemDetail);
+                    $this->processCount++;
+                }
                 echo "已处理：{$this->processCount}\r";
             }
         }
