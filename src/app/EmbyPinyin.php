@@ -66,8 +66,8 @@ by: hisune.com        |_____|______|__|             |_____|
         foreach($this->historyContent as $key => $data){
             echo ($key + 1) . ") 地址：{$data['host']}\tAPI密钥：{$data['key']}\r\n";
         }
-        echo "0) 使用新的服务器地址和API密钥\r\n";
-        $ask = ask("找到 $count 个历史emby服务器，输入编号直接选取，或编号前加减号 - 删除该历史记录，例如：-1");
+        echo "0) 输入新的服务器地址和API密钥\r\n";
+        $ask = ask("找到 $count 个历史emby服务器，输入编号直接选取，或编号前加减号-删除该历史记录，例如：-1");
         if($ask == '0'){
             $this->selectByInput();
         }else{
@@ -115,7 +115,7 @@ by: hisune.com        |_____|______|__|             |_____|
             }else{
                 $this->writeHistory();
             }
-            logger("已删除编号：{$num} 的数据");
+            logger("已删除编号：{$num} 的配置项");
             $this->selectServer();
         }else{ // 选取
             $this->selected = $this->historyContent[$num - 1];

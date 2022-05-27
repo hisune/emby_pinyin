@@ -14,7 +14,10 @@ function logger($message, $echo = true)
 function ask($topic)
 {
     echo $topic . "\r\n";
-    return trim(fgets(STDIN));
+    $handle = fopen("php://stdin", "r");
+    $input = fgets($handle);
+    fclose($handle);
+    return trim($input);
 }
 
 function failure($msg)
