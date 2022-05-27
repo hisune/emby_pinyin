@@ -160,6 +160,7 @@ by: hisune.com        |_____|______|__|             |_____|
 
     protected function toPinyin()
     {
+        $auto = ask("是否自动处理所有媒体库？选是将自动处理所有媒体库，选否需要你自行选择处理哪些媒体库。(y/n)");
         foreach($this->items['Items'] as $item){
             if(!$item['IsFolder']) {
                 logger('跳过非目录：' . $item['Name'], false);
@@ -169,17 +170,25 @@ by: hisune.com        |_____|______|__|             |_____|
                 logger('自动跳过playlists：' . $item['Id']);
                 continue;
             }
-
-            $ask = ask("是否处理此媒体库 【{$item['Name']}】 下的所有媒体？(y/n)");
-            if($ask == 'y'){
-                $this->initCount();
-                logger("开始处理 【{$item['Name']}】");
-                $this->renderFolder($item['Id']);
-                logger("已跳过：{$this->skipCount}，已处理：{$this->processCount}");
-            }else{
-                logger("跳过 【{$item['Name']}】", false);
+            if($auto == 'y'){ // 自动处理所有媒体库
+                $this->processedItem($item);
+            }else{ // 手动选择处理
+                $ask = ask("是否处理此媒体库 【{$item['Name']}】 下的所有媒体？(y/n)");
+                if($ask == 'y'){
+                    $this->processedItem($item);
+                }else{
+                    logger("跳过 【{$item['Name']}】", false);
+                }
             }
         }
+    }
+
+    private function processedItem($item)
+    {
+        $this->initCount();
+        logger("开始处理 【{$item['Name']}】");
+        $this->renderFolder($item['Id']);
+        logger("已跳过：{$this->skipCount}，已处理：{$this->processCount}");
     }
 
     private function initCount()
@@ -191,7 +200,7 @@ by: hisune.com        |_____|______|__|             |_____|
     private function renderFolder($id)
     {
         $items = $this->sendRequest('Items', ['ParentId' => $id]);
-        logger(json_encode($items), false);
+//        logger(json_encode($items), false);
         foreach($items['Items'] as $item){
             if($item['Type'] == 'Folder'){
                 $this->renderFolder($item['Id']);
@@ -224,18 +233,21 @@ by: hisune.com        |_____|______|__|             |_____|
                 $paramsString = '';
             }
             $client = new Client();
+            $fullUrl = "{$this->selected['host']}/{$uri}?api_key={$this->selected['key']}{$paramsString}";
+            logger("url: {$fullUrl}, data: " . json_encode($postData), false);
             if(!$postData){
-                $response = $client->get("{$this->selected['host']}/{$uri}?api_key={$this->selected['key']}{$paramsString}");
+                $response = $client->get($fullUrl);
             }else{
-                $response = $client->post("{$this->selected['host']}/{$uri}?api_key={$this->selected['key']}{$paramsString}", [
+                $response = $client->post($fullUrl, [
                     'json' => $postData,
                 ]);
             }
             $content = $response->getBody()->getContents();
-            if($response->getStatusCode() != 200 && $response->getStatusCode() != 204){
-                failure('响应错误，检查您的参数：' . $response->getStatusCode() . ' with ' . $content);
+            $statusCode = $response->getStatusCode();
+            if($statusCode != 200 && $statusCode != 204){
+                failure('响应错误，检查您的参数：' . $statusCode . ' with ' . $content);
             }else{
-                logger($content, false);
+                // logger($content, false);
                 return json_decode($content, true);
             }
         }catch (\Exception $e){
