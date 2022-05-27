@@ -186,7 +186,7 @@ by: hisune.com        |_____|______|__|             |_____|
     private function processedItem($item)
     {
         $this->initCount();
-        logger("开始处理 【{$item['Name']}】");
+        logger("开始处理 【{$item['Name']}】，选取文字后暂停，回车继续");
         $this->renderFolder($item['Id']);
         logger("已跳过：{$this->skipCount}，已处理：{$this->processCount}");
     }
