@@ -7,8 +7,8 @@
     "license": "Apache-2.0",
     "support": {
         "email": "hi@hisune.com",
-        "issues": "https://github.com/hisune/emby2pinyin/issues",
-        "source": "https://github.com/hisune/emby2pinyin"
+        "issues": "https://github.com/hisune/emby_pinyin/issues",
+        "source": "https://github.com/hisune/emby_pinyin"
     },
     "require": {
         "php": ">=7.2.0",
