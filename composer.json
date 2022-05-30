@@ -21,5 +21,15 @@
             "homepage": "https://hisune.com",
             "role": "Developer"
         }
-    ]
+    ],
+    "scripts": {
+        "install": [
+          "cd src && composer install",
+          "cd ..",
+          "php pack.php"
+        ],
+        "start": [
+          "php run.php"
+        ]
+    }
 }
