@@ -21,7 +21,7 @@
 
 #### linux及mac系统使用方法
 
-> 需要PHP7.2以上版本
+> 需要PHP7.2及以上版本
 
 ```sh
 git clone https://github.com/hisune/emby_pinyin.git
