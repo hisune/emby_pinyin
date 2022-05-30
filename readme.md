@@ -3,7 +3,10 @@
 此工具能使emby支持电影和电视剧的拼音首字母排序，如果觉得此工具帮到你，可以点个Star！
 
 ### 使用方法
+
 #### windows系统环境
+
+为方便没有windows php环境的用户，直接打包了exe程序执行：
 
 1. 下载：[release](https://github.com/hisune/emby_pinyin/releases)
 2. 解压后打开文件夹里面的emby.exe
@@ -12,17 +15,24 @@
 5. 等待处理完成
 
 #### linux及mac使用方式
+
 > 需要PHP7.2以上版本
+
 ```sh
+git clone https://github.com/hisune/emby_pinyin.git
 cd src && composer install
 cd ..
 php pack.php
 php run.php
 ```
+
 执行完毕以上命令后的操作步骤和windows版本一致
+
+运行截图：
 
 ![](https://raw.githubusercontent.com/hisune/images/master/emby_pinyin_2.jpg)
 
 
 ### 使用效果
+
 ![](https://raw.githubusercontent.com/hisune/images/master/emby_pinyin_1.jpg)
