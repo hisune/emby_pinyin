@@ -26,7 +26,7 @@
 ```sh
 composer create-project hisune/emby_pinyin:dev-master
 cd emby_pinyin
-composer install
+composer pre-install
 composer start
 ```
 
