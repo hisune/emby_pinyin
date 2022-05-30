@@ -23,7 +23,7 @@
         }
     ],
     "scripts": {
-        "install": [
+        "pre-install": [
           "cd src && composer install",
           "cd ..",
           "php pack.php"
