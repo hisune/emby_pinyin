@@ -24,11 +24,10 @@
 > 需要PHP7.2及以上版本
 
 ```sh
-git clone https://github.com/hisune/emby_pinyin.git
-cd src && composer install
-cd ..
-php pack.php
-php run.php
+composer create-project hisune/emby_pinyin:dev-master
+cd emby_pinyin
+composer install
+composer start
 ```
 
 执行完毕以上命令后的操作步骤和windows版本一致
