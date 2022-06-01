@@ -24,7 +24,7 @@
 > 需要PHP7.2及以上版本
 
 ```sh
-composer create-project hisune/emby_pinyin:dev-master
+composer create-project hisune/emby_pinyin
 cd emby_pinyin
 composer pre-install
 composer start
