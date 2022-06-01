@@ -16,6 +16,7 @@ class EmbyPinyin
     protected $items;
     protected $skipCount = 0;
     protected $processCount = 0;
+    protected $pinyinType = 1; // 拼音方式：1：首字母，2：全拼，3：前置字母，4：emby默认
 
     public function __construct()
     {
@@ -161,6 +162,12 @@ by: hisune.com        |_____|______|__|             |_____|
 
     protected function toPinyin()
     {
+        echo "\r\n1) 首字母\r\n2) 全拼\r\n3) 前置字母\r\n4) emby默认\r\n";
+        $this->pinyinType = intval(ask("请选择拼音排序方式(默认为1)："));
+        if(!in_array($this->pinyinType, [1,2,3,4])){
+            $this->pinyinType = 1;
+        }
+        echo "\r\n";
         $auto = ask("是否自动处理所有媒体库？选是将自动处理所有媒体库，选否需要你自行选择处理哪些媒体库。(y/n)");
         foreach($this->items['Items'] as $item){
             if(!$item['IsFolder']) {
@@ -208,13 +215,26 @@ by: hisune.com        |_____|______|__|             |_____|
             }else if($item['Type'] == 'Series' || $item['Type'] == 'Movie'){
                 // 获取item详情
                 $itemDetail = $this->sendRequest("Users/{$this->user['Id']}/Items/{$item['Id']}");
-                $pinyinAbbr = $this->pinyin->abbr($itemDetail['Name'], PINYIN_KEEP_NUMBER|PINYIN_KEEP_ENGLISH);
-                if($itemDetail['SortName'] == $pinyinAbbr){
+                switch ($this->pinyinType){
+                    case 2: // 全拼
+                        $sortName = $this->pinyin->permalink($itemDetail['Name'], '');
+                        break;
+                    case 3: // 前置字母
+                        $pinyinAbbr = $this->pinyin->abbr($itemDetail['Name'], PINYIN_KEEP_NUMBER|PINYIN_KEEP_ENGLISH);
+                        $sortName = substr($pinyinAbbr, 0, 1) . $itemDetail['Name'];
+                        break;
+                    case 4: // emby默认
+                        $sortName = $itemDetail['Name'];
+                        break;
+                    default: // 首字母
+                        $sortName = $this->pinyin->abbr($itemDetail['Name'], PINYIN_KEEP_NUMBER|PINYIN_KEEP_ENGLISH);
+                }
+                if($itemDetail['SortName'] == $sortName){
                     logger('跳过：' . $itemDetail['Name'], false);
                     $this->skipCount++;
                 }else{
-                    $itemDetail['SortName'] = $pinyinAbbr;
-                    $itemDetail['ForcedSortName'] = $pinyinAbbr;
+                    $itemDetail['SortName'] = $sortName;
+                    $itemDetail['ForcedSortName'] = $sortName;
                     $itemDetail['LockedFields'] = ['SortName'];
                     // 修改
                     $this->sendRequest("/Items/{$item['Id']}", [], $itemDetail);
