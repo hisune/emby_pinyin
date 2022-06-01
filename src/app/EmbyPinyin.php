@@ -207,7 +207,7 @@ by: hisune.com        |_____|______|__|             |_____|
             }else if($item['Type'] == 'Series' || $item['Type'] == 'Movie'){
                 // 获取item详情
                 $itemDetail = $this->sendRequest("Users/{$this->user['Id']}/Items/{$item['Id']}");
-                $pinyinAbbr = $this->pinyin->abbr($itemDetail['Name']);
+                $pinyinAbbr = $this->pinyin->abbr($itemDetail['Name'], PINYIN_KEEP_NUMBER|PINYIN_KEEP_ENGLISH);
                 if($itemDetail['SortName'] == $pinyinAbbr){
                     logger('跳过：' . $itemDetail['Name'], false);
                     $this->skipCount++;
