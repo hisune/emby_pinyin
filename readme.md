@@ -23,6 +23,8 @@
 
 > 需要PHP7.2及以上版本
 
+首次执行：
+
 ```sh
 composer create-project hisune/emby_pinyin
 cd emby_pinyin
@@ -30,11 +32,16 @@ composer pre-install
 composer start
 ```
 
+二次执行：
+```sh
+composer start
+```
+
 执行完毕以上命令后的操作步骤和windows版本一致
 
 #### 拼音排序方式
-以“测试”俩字为例，不同排序方式的最终结果如下：
-1. 首字母：cs 
+以“测试”俩字为例，不同排序方式的最终结果如下(默认为首字母方式)：
+1. 首字母：cs
 2. 全拼：ceshi
 3. 前置字母：c测试
 4. emby默认：测试
