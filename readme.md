@@ -23,10 +23,17 @@
 
 > 需要PHP7.2及以上版本
 
+首次执行：
+
 ```sh
 composer create-project hisune/emby_pinyin:dev-master
 cd emby_pinyin
 composer pre-install
+composer start
+```
+
+二次执行：
+```sh
 composer start
 ```
 
