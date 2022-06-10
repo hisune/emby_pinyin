@@ -22,6 +22,9 @@ class EmbyPinyin
     {
         $this->historyContentPath = getcwd() . '/var/storage/history.data';
         $historyContentDir = dirname($this->historyContentPath);
+        if(!is_writable($historyContentDir)){
+            failure('错误：当前目录没有写入权限，请 更换目录 或 尝试以管理员模式运行：' . getcwd());
+        }
         if(!file_exists($historyContentDir)) mkdir($historyContentDir, 0777, true);
         $this->pinyin = new Pinyin();
     }
@@ -154,7 +157,7 @@ by: hisune.com        |_____|______|__|             |_____|
 
     protected function initItems()
     {
-        $items = $this->sendRequest('Items');
+        $items = $this->sendRequest("Users/{$this->user['Id']}/Views");
         logger(json_encode($items), false);
         logger("获取到 {$items['TotalRecordCount']} 个媒体库");
         $this->items = $items;
@@ -172,10 +175,6 @@ by: hisune.com        |_____|______|__|             |_____|
         foreach($this->items['Items'] as $item){
             if(!$item['IsFolder']) {
                 logger('跳过非目录：' . $item['Name'], false);
-                continue;
-            }
-            if($item['Name'] == 'playlists'){
-                logger('自动跳过playlists：' . $item['Id']);
                 continue;
             }
             if($auto == 'y'){ // 自动处理所有媒体库
@@ -210,9 +209,9 @@ by: hisune.com        |_____|______|__|             |_____|
         $items = $this->sendRequest('Items', ['ParentId' => $id]);
 //        logger(json_encode($items), false);
         foreach($items['Items'] as $item){
-            if($item['Type'] == 'Folder'){
+            if(in_array($item['Type'], ['Folder', 'CollectionFolder'])){
                 $this->renderFolder($item['Id']);
-            }else if($item['Type'] == 'Series' || $item['Type'] == 'Movie'){
+            }else if(in_array($item['Type'], ['Series', 'Movie', 'BoxSet'])){
                 // 获取item详情
                 $itemDetail = $this->sendRequest("Users/{$this->user['Id']}/Items/{$item['Id']}");
                 switch ($this->pinyinType){
