@@ -172,19 +172,31 @@ by: hisune.com        |_____|______|__|             |_____|
         }
         echo "\r\n";
         $auto = ask("是否自动处理所有媒体库？选是将自动处理所有媒体库，选否需要你自行选择处理哪些媒体库。(y/n)");
-        foreach($this->items['Items'] as $item){
-            if(!$item['IsFolder']) {
-                logger('跳过非目录：' . $item['Name'], false);
-                continue;
-            }
-            if($auto == 'y'){ // 自动处理所有媒体库
+        if($auto == 'y') { // 自动处理所有媒体库
+            foreach($this->items['Items'] as $item){
+                if(!$item['IsFolder']) {
+                    logger('跳过非目录：' . $item['Name'], false);
+                    continue;
+                }
                 $this->processedItem($item);
-            }else{ // 手动选择处理
-                $ask = ask("是否处理此媒体库 【{$item['Name']}】 下的所有媒体？(y/n)");
-                if($ask == 'y'){
-                    $this->processedItem($item);
+            }
+        }else{
+            $processed = [];
+            while(true){
+                foreach($this->items['Items'] as $key => $item){
+                    if(!$item['IsFolder']) {
+                        logger('跳过非目录：' . $item['Name'], false);
+                        continue;
+                    }
+                    $isProcessed = isset($processed[$key]) ? "\t(本次已处理)" : '';
+                    echo "{$key}) {$item['name']}$isProcessed\r\n";
+                }
+                $ask = ask("请选择要处理的媒体库");
+                if(!isset($this->items['Items'][$ask])){
+                    logger("无效的选项：{$ask}");
                 }else{
-                    logger("跳过 【{$item['Name']}】", false);
+                    $this->processedItem($this->items['Items'][$ask]);
+                    $processed[$ask] = true;
                 }
             }
         }
