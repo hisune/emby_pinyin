@@ -22,10 +22,10 @@ class EmbyPinyin
     {
         $this->historyContentPath = getcwd() . '/var/storage/history.data';
         $historyContentDir = dirname($this->historyContentPath);
+        if(!file_exists($historyContentDir)) @mkdir($historyContentDir, 0777, true);
         if(!is_writable($historyContentDir)){
             failure('错误：当前目录没有写入权限，请 更换目录 或 尝试以管理员模式运行：' . getcwd());
         }
-        if(!file_exists($historyContentDir)) mkdir($historyContentDir, 0777, true);
         $this->pinyin = new Pinyin();
     }
 
