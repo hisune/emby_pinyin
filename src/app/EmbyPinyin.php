@@ -165,7 +165,9 @@ by: hisune.com        |_____|______|__|             |_____|
 
     protected function toPinyin()
     {
-        echo "\r\n1) 首字母\r\n2) 全拼\r\n3) 前置字母\r\n4) emby默认\r\n";
+        echo "-----------------------\r\n";
+        echo "1) 首字母\r\n2) 全拼\r\n3) 前置字母\r\n4) emby默认\r\n";
+        echo "-----------------------\r\n";
         $this->pinyinType = intval(ask("请选择拼音排序方式(默认为1)："));
         if(!in_array($this->pinyinType, [1,2,3,4])){
             $this->pinyinType = 1;
@@ -183,19 +185,23 @@ by: hisune.com        |_____|______|__|             |_____|
         }else{
             $processed = [];
             while(true){
+                echo "-----------------------\r\n";
                 foreach($this->items['Items'] as $key => $item){
                     if(!$item['IsFolder']) {
                         logger('跳过非目录：' . $item['Name'], false);
                         continue;
                     }
-                    $isProcessed = isset($processed[$key]) ? "\t(本次已处理)" : '';
-                    echo "{$key}) {$item['name']}$isProcessed\r\n";
+                    $humanKey = $key + 1;
+                    $isProcessed = isset($processed[$humanKey]) ? "\t(本次已处理)" : '';
+                    echo "{$humanKey}) {$item['Name']}$isProcessed\r\n";
                 }
-                $ask = ask("请选择要处理的媒体库");
-                if(!isset($this->items['Items'][$ask])){
+                echo "-----------------------\r\n";
+                $ask = intval(ask("请选择要处理的媒体库"));
+                $key = $ask - 1;
+                if(!isset($this->items['Items'][$key])){
                     logger("无效的选项：{$ask}");
                 }else{
-                    $this->processedItem($this->items['Items'][$ask]);
+                    $this->processedItem($this->items['Items'][$key]);
                     $processed[$ask] = true;
                 }
             }
