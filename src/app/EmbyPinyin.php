@@ -69,10 +69,12 @@ by: hisune.com        |_____|______|__|             |_____|
         $count = count($this->historyContent);
         echo "\r\n";
         foreach($this->historyContent as $key => $data){
-            echo ($key + 1) . ") 地址：{$data['host']}\tAPI密钥：{$data['key']}\r\n";
+            $keyLength = min(strlen($data['key']), 24);
+            echo ($key + 1) . ") 地址：{$data['host']}\tAPI密钥：" . substr($data['key'], 0, -$keyLength) . str_repeat('*', $keyLength) . "\r\n";
         }
         echo "0) 输入新的服务器地址和API密钥\r\n\r\n";
-        $ask = ask("找到 $count 个历史emby服务器，输入编号直接选取，或编号前加减号-删除该配置项，例如：-1");
+        $ask = ask("找到 $count 个历史emby服务器，输入编号直接选取(默认为1)，或编号前加减号-删除该配置项，例如：-1");
+        if(trim($ask) === '') $ask = 1;
         if($ask == '0'){
             $this->selectByInput();
         }else{
@@ -165,26 +167,45 @@ by: hisune.com        |_____|______|__|             |_____|
 
     protected function toPinyin()
     {
-        echo "\r\n1) 首字母\r\n2) 全拼\r\n3) 前置字母\r\n4) emby默认\r\n";
+        echo "\r\n-----------------------\r\n";
+        echo "1) 首字母\r\n2) 全拼\r\n3) 前置字母\r\n4) emby默认\r\n";
+        echo "-----------------------\r\n";
         $this->pinyinType = intval(ask("请选择拼音排序方式(默认为1)："));
         if(!in_array($this->pinyinType, [1,2,3,4])){
+            logger("无效的选项，将使用默认排序");
             $this->pinyinType = 1;
         }
         echo "\r\n";
-        $auto = ask("是否自动处理所有媒体库？选是将自动处理所有媒体库，选否需要你自行选择处理哪些媒体库。(y/n)");
-        foreach($this->items['Items'] as $item){
-            if(!$item['IsFolder']) {
-                logger('跳过非目录：' . $item['Name'], false);
-                continue;
-            }
-            if($auto == 'y'){ // 自动处理所有媒体库
+        $auto = ask("是否自动处理所有媒体库？选是将自动处理所有媒体库，选否需要你自行选择处理哪些媒体库。(y/n,默认为n)");
+        if($auto == 'y') { // 自动处理所有媒体库
+            foreach($this->items['Items'] as $item){
+                if(!$item['IsFolder']) {
+                    logger('跳过非目录：' . $item['Name'], false);
+                    continue;
+                }
                 $this->processedItem($item);
-            }else{ // 手动选择处理
-                $ask = ask("是否处理此媒体库 【{$item['Name']}】 下的所有媒体？(y/n)");
-                if($ask == 'y'){
-                    $this->processedItem($item);
+            }
+        }else{
+            $processed = [];
+            while(true){
+                echo "\r\n-----------------------\r\n";
+                foreach($this->items['Items'] as $key => $item){
+                    if(!$item['IsFolder']) {
+                        logger('跳过非目录：' . $item['Name'], false);
+                        continue;
+                    }
+                    $humanKey = $key + 1;
+                    $isProcessed = isset($processed[$humanKey]) ? "\t(本次已处理)" : '';
+                    echo "{$humanKey}) {$item['Name']}$isProcessed\r\n";
+                }
+                echo "-----------------------\r\n";
+                $ask = intval(ask("请选择要处理的媒体库"));
+                $key = $ask - 1;
+                if(!isset($this->items['Items'][$key])){
+                    logger("无效的选项：{$ask}");
                 }else{
-                    logger("跳过 【{$item['Name']}】", false);
+                    $this->processedItem($this->items['Items'][$key]);
+                    $processed[$ask] = true;
                 }
             }
         }
