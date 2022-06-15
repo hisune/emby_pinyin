@@ -16,7 +16,8 @@ class EmbyPinyin
     protected $items;
     protected $skipCount = 0;
     protected $processCount = 0;
-    protected $pinyinType = 1; // 拼音方式：1：首字母，2：全拼，3：前置字母，4：emby默认
+    protected $pinyinType = 1; // 拼音方式：1：首字母，2：全拼，3：前置字母，4：默认
+    protected $isJellyfin = false; // 是否是jellyfin服务器
 
     public function __construct()
     {
@@ -41,7 +42,7 @@ by: hisune.com        |_____|______|__|             |_____|
         $this->saveHistory();
         logger('开始获取用户信息');
         $this->initUser();
-        logger('开始获取媒体库信息');
+        logger('当前服务器为：' . ($this->isJellyfin ? 'jellyfin' : 'emby') . '，开始获取媒体库信息');
         $this->initItems();
         $this->toPinyin();
     }
@@ -73,7 +74,7 @@ by: hisune.com        |_____|______|__|             |_____|
             echo ($key + 1) . ") 地址：{$data['host']}\tAPI密钥：" . substr($data['key'], 0, -$keyLength) . str_repeat('*', $keyLength) . "\r\n";
         }
         echo "0) 输入新的服务器地址和API密钥\r\n\r\n";
-        $ask = ask("找到 $count 个历史emby服务器，输入编号直接选取(默认为1)，或编号前加减号-删除该配置项，例如：-1");
+        $ask = ask("找到 $count 个历史服务器，输入编号直接选取(默认为1)，或编号前加减号-删除该配置项，例如：-1");
         if(trim($ask) === '') $ask = 1;
         if($ask == '0'){
             $this->selectByInput();
@@ -90,7 +91,7 @@ by: hisune.com        |_____|______|__|             |_____|
 
     private function selectHostByInput()
     {
-        $ask = ask('请输入你的emby服务器地址，例如：http://192.168.1.1:8096，也可省略http://或端口（默认为http和8096）');
+        $ask = ask('请输入你的服务器地址，例如：http://192.168.1.1:8096，也可省略http://或端口（默认为http和8096）');
         if(!$ask) $this->selectHostByInput();
         $parseUrl = parse_url($ask);
         if(!isset($parseUrl['scheme'])) $parseUrl['scheme'] = 'http';
@@ -100,7 +101,7 @@ by: hisune.com        |_____|______|__|             |_____|
 
     private function selectKeyByInput()
     {
-        $ask = ask('请输入你的API密钥，密钥需要使用【管理员账号】在emby管理后台的[高级]->[API密钥]进行创建和获取：');
+        $ask = ask('请输入你的API密钥，密钥需要使用【管理员账号】在管理后台的[高级]->[API密钥]进行创建和获取：');
         if(!$ask) $this->selectKeyByInput();
         $this->selected['key'] = $ask;
         $this->selectedByInput = true;
@@ -150,6 +151,9 @@ by: hisune.com        |_____|______|__|             |_____|
         foreach($users as $user){
             if($user['Policy']['IsAdministrator']){
                 $this->user = $user;
+                if(isset($user['Policy']['AuthenticationProviderId']) && strpos($user['Policy']['AuthenticationProviderId'], 'Jellyfin') === 0){
+                    $this->isJellyfin = true;
+                }
             }
         }
         if(!$this->user){
@@ -168,7 +172,7 @@ by: hisune.com        |_____|______|__|             |_____|
     protected function toPinyin()
     {
         echo "\r\n-----------------------\r\n";
-        echo "1) 首字母\r\n2) 全拼\r\n3) 前置字母\r\n4) emby默认\r\n";
+        echo "1) 首字母\r\n2) 全拼\r\n3) 前置字母\r\n4) 默认\r\n";
         echo "-----------------------\r\n";
         $this->pinyinType = intval(ask("请选择拼音排序方式(默认为1)："));
         if(!in_array($this->pinyinType, [1,2,3,4])){
@@ -227,37 +231,41 @@ by: hisune.com        |_____|______|__|             |_____|
 
     private function renderFolder($id)
     {
-        $items = $this->sendRequest('Items', ['ParentId' => $id]);
+        $items = $this->sendRequest("Users/{$this->user['Id']}/Items", ['ParentId' => $id]);
 //        logger(json_encode($items), false);
         foreach($items['Items'] as $item){
             if(in_array($item['Type'], ['Folder', 'CollectionFolder'])){
                 $this->renderFolder($item['Id']);
             }else if(in_array($item['Type'], ['Series', 'Movie', 'BoxSet'])){
                 // 获取item详情
-                $itemDetail = $this->sendRequest("Users/{$this->user['Id']}/Items/{$item['Id']}");
+                $itemDetail = $this->sendRequest("Users/{$this->user['Id']}/Items/{$item['Id']}", [], [], false);
                 switch ($this->pinyinType){
                     case 2: // 全拼
-                        $sortName = $this->pinyin->permalink($itemDetail['Name'], '');
+                        $sortName = $this->pinyin->permalink($itemDetail->Name, '');
                         break;
                     case 3: // 前置字母
-                        $pinyinAbbr = $this->pinyin->abbr($itemDetail['Name'], PINYIN_KEEP_NUMBER|PINYIN_KEEP_ENGLISH);
-                        $sortName = substr($pinyinAbbr, 0, 1) . $itemDetail['Name'];
+                        $pinyinAbbr = $this->pinyin->abbr($itemDetail->Name, PINYIN_KEEP_NUMBER|PINYIN_KEEP_ENGLISH);
+                        $sortName = substr($pinyinAbbr, 0, 1) . $itemDetail->Name;
                         break;
-                    case 4: // emby默认
-                        $sortName = $itemDetail['Name'];
+                    case 4: // 默认
+                        $sortName = $itemDetail->Name;
                         break;
                     default: // 首字母
-                        $sortName = $this->pinyin->abbr($itemDetail['Name'], PINYIN_KEEP_NUMBER|PINYIN_KEEP_ENGLISH);
+                        $sortName = $this->pinyin->abbr($itemDetail->Name, PINYIN_KEEP_NUMBER|PINYIN_KEEP_ENGLISH);
                 }
-                if($itemDetail['SortName'] == $sortName){
-                    logger('跳过：' . $itemDetail['Name'], false);
+                if($itemDetail->SortName == $sortName){
+                    logger('跳过：' . $itemDetail->Name, false);
                     $this->skipCount++;
                 }else{
-                    $itemDetail['SortName'] = $sortName;
-                    $itemDetail['ForcedSortName'] = $sortName;
-                    $itemDetail['LockedFields'] = ['SortName'];
+                    if($this->isJellyfin){
+                        unset($itemDetail->SortName);
+                    }else{
+                        $itemDetail->SortName = $sortName;
+                        $itemDetail->LockedFields = ['SortName'];
+                    }
+                    $itemDetail->ForcedSortName = $sortName;
                     // 修改
-                    $this->sendRequest("/Items/{$item['Id']}", [], $itemDetail);
+                    $this->sendRequest("Items/{$item['Id']}", [], $itemDetail);
                     $this->processCount++;
                 }
                 echo "已跳过：{$this->skipCount}，已处理：{$this->processCount}\r";
@@ -265,7 +273,7 @@ by: hisune.com        |_____|______|__|             |_____|
         }
     }
 
-    private function sendRequest($uri, $params = [], $postData = [])
+    private function sendRequest($uri, $params = [], $postData = [], $assoc = true)
     {
         try{
             if($params){
@@ -289,7 +297,7 @@ by: hisune.com        |_____|______|__|             |_____|
                 failure('响应错误，检查您的参数：' . $statusCode . ' with ' . $content);
             }else{
                 // logger($content, false);
-                return json_decode($content, true);
+                return json_decode($content, $assoc);
             }
         }catch (\Exception $e){
             failure('响应错误，检查您的服务器地址配置：' . $e->getMessage());
