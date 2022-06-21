@@ -23,7 +23,10 @@ function ask($topic)
 function failure($msg)
 {
     logger($msg);
+    $i = 0;
     while (true){
         sleep(10);
+        $i++;
+        if($i >= 60) exit;
     }
 }
