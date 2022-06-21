@@ -18,9 +18,37 @@ class EmbyPinyin
     protected $processCount = 0;
     protected $pinyinType = 1; // 拼音方式：1：首字母，2：全拼，3：前置字母，4：默认
     protected $isJellyfin = false; // 是否是jellyfin服务器
+    protected $options = [
+        'server' => [
+            'short' => 's',
+            'description' => '服务器编号',
+            'value' => null,
+        ],
+        'type' => [
+            'short' => 't',
+            'description' => '排序方式，1：首字母，2：全拼，3：前置字母，4：默认',
+            'value' => null,
+        ],
+        'all' => [
+            'short' => 'a',
+            'description' => '是否处理所有媒体库，y是，n否',
+            'value' => null,
+        ],
+        'media' => [
+            'short' => 'm',
+            'description' => '媒体库编号',
+            'value' => null,
+        ],
+        'help' => [
+            'short' => 'h',
+            'description' => '获取帮助',
+            'value' => null,
+        ],
+    ];
 
     public function __construct()
     {
+        date_default_timezone_set('Asia/Shanghai');
         $this->historyContentPath = getcwd() . '/var/storage/history.data';
         $historyContentDir = dirname($this->historyContentPath);
         if(!file_exists($historyContentDir)) @mkdir($historyContentDir, 0777, true);
@@ -28,6 +56,7 @@ class EmbyPinyin
             failure('错误：当前目录没有写入权限，请 更换目录 或 尝试以管理员模式运行：' . getcwd());
         }
         $this->pinyin = new Pinyin();
+        $this->initOptions();
     }
 
     public function run()
@@ -45,6 +74,38 @@ by: hisune.com        |_____|______|__|             |_____|
         logger('当前服务器为：' . ($this->isJellyfin ? 'jellyfin' : 'emby') . '，开始获取媒体库信息');
         $this->initItems();
         $this->toPinyin();
+    }
+
+    private function initOptions()
+    {
+        $shortOptions = '';
+        $longOptions = [];
+        $optionsMap = [];
+        foreach($this->options as $name => $option){
+            $shortOptions .= $option['short'] . ($name == 'help' ? '' :':');
+            $longOptions[] = $name . ($name == 'help' ? '' :':');
+            $optionsMap[$option['short']] = $name;
+        }
+        $options = getopt($shortOptions, $longOptions);
+        foreach($options as $name => $option){
+            if(isset($this->options[$name])){
+                $this->options[$name]['value'] = $option;
+            }elseif(isset($this->options[$optionsMap[$name]])){
+                $this->options[$optionsMap[$name]]['value'] = $option;
+            }
+        }
+        if($this->options['help']['value'] !== null){
+            echo "\r\n使用方法：emby [参数]\r\n";
+            foreach($this->options as $name => $option){
+                echo "-{$option['short']}, --{$name}\t\t"."{$option['description']}\r\n";
+            }
+            failure('');
+        }
+    }
+
+    private function getOption($name)
+    {
+        return $this->options[$name]['value'];
     }
 
     protected function selectServer()
@@ -68,18 +129,23 @@ by: hisune.com        |_____|______|__|             |_____|
         }
         $this->historyContent = $historyContent;
         $count = count($this->historyContent);
-        echo "\r\n";
-        foreach($this->historyContent as $key => $data){
-            $keyLength = min(strlen($data['key']), 24);
-            echo ($key + 1) . ") 地址：{$data['host']}\tAPI密钥：" . substr($data['key'], 0, -$keyLength) . str_repeat('*', $keyLength) . "\r\n";
-        }
-        echo "0) 输入新的服务器地址和API密钥\r\n\r\n";
-        $ask = ask("找到 $count 个历史服务器，输入编号直接选取(默认为1)，或编号前加减号-删除该配置项，例如：-1");
-        if(trim($ask) === '') $ask = 1;
-        if($ask == '0'){
-            $this->selectByInput();
+        if($this->getOption('server') === null){
+            echo "\r\n";
+            foreach($this->historyContent as $key => $data){
+                $keyLength = min(strlen($data['key']), 24);
+                echo ($key + 1) . ") 地址：{$data['host']}\tAPI密钥：" . substr($data['key'], 0, -$keyLength) . str_repeat('*', $keyLength) . "\r\n";
+            }
+            echo "0) 输入新的服务器地址和API密钥\r\n\r\n";
+            $ask = ask("找到 $count 个历史服务器，输入编号直接选取(默认为1)，或编号前加减号-删除该配置项，例如：-1");
+            if(trim($ask) === '') $ask = 1;
+            if($ask == '0'){
+                $this->selectByInput();
+            }else{
+                $this->selectByHistory($ask);
+            }
         }else{
-            $this->selectByHistory($ask);
+            logger('使用server参数：' . $this->getOption('server'));
+            $this->selectByHistory($this->getOption('server'));
         }
     }
 
@@ -112,6 +178,7 @@ by: hisune.com        |_____|______|__|             |_____|
         $num = abs($answer);
         if(!isset($this->historyContent[$num - 1])){
             logger("\r\n编号：{$num} 无效，请重新选取");
+            sleep(1);
             $this->selectServer();
             return false;
         }
@@ -171,16 +238,26 @@ by: hisune.com        |_____|______|__|             |_____|
 
     protected function toPinyin()
     {
-        echo "\r\n-----------------------\r\n";
-        echo "1) 首字母\r\n2) 全拼\r\n3) 前置字母\r\n4) 默认\r\n";
-        echo "-----------------------\r\n";
-        $this->pinyinType = intval(ask("请选择拼音排序方式(默认为1)："));
+        if($this->getOption('type') === null){
+            echo "\r\n-----------------------\r\n";
+            echo "1) 首字母\r\n2) 全拼\r\n3) 前置字母\r\n4) 默认\r\n";
+            echo "-----------------------\r\n";
+            $this->pinyinType = intval(ask("请选择拼音排序方式(默认为1)："));
+            echo "\r\n";
+        }else{
+            $this->pinyinType = intval($this->getOption('type'));
+            logger('使用type参数：' . $this->pinyinType);
+        }
         if(!in_array($this->pinyinType, [1,2,3,4])){
             logger("无效的选项，将使用默认排序");
             $this->pinyinType = 1;
         }
-        echo "\r\n";
-        $auto = ask("是否自动处理所有媒体库？选是将自动处理所有媒体库，选否需要你自行选择处理哪些媒体库。(y/n,默认为n)");
+        if($this->getOption('all') === null){
+            $auto = ask("是否自动处理所有媒体库？选是将自动处理所有媒体库，选否需要你自行选择处理哪些媒体库。(y/n,默认为n)");
+        }else{
+            $auto = $this->getOption('all');
+            logger('使用all参数：' . $auto);
+        }
         if($auto == 'y') { // 自动处理所有媒体库
             foreach($this->items['Items'] as $item){
                 if(!$item['IsFolder']) {
@@ -190,26 +267,36 @@ by: hisune.com        |_____|______|__|             |_____|
                 $this->processedItem($item);
             }
         }else{
-            $processed = [];
-            while(true){
-                echo "\r\n-----------------------\r\n";
-                foreach($this->items['Items'] as $key => $item){
-                    if(!$item['IsFolder']) {
-                        logger('跳过非目录：' . $item['Name'], false);
-                        continue;
+            if($this->getOption('media') === null){
+                $processed = [];
+                while(true){
+                    echo "\r\n-----------------------\r\n";
+                    foreach($this->items['Items'] as $key => $item){
+                        if(!$item['IsFolder']) {
+                            logger('跳过非目录：' . $item['Name'], false);
+                            continue;
+                        }
+                        $humanKey = $key + 1;
+                        $isProcessed = isset($processed[$humanKey]) ? "\t(本次已处理)" : '';
+                        echo "{$humanKey}) {$item['Name']}$isProcessed\r\n";
                     }
-                    $humanKey = $key + 1;
-                    $isProcessed = isset($processed[$humanKey]) ? "\t(本次已处理)" : '';
-                    echo "{$humanKey}) {$item['Name']}$isProcessed\r\n";
+                    echo "-----------------------\r\n";
+                    $ask = intval(ask("请选择要处理的媒体库"));
+                    $key = $ask - 1;
+                    if(!isset($this->items['Items'][$key])){
+                        logger("无效的选项：{$ask}");
+                    }else{
+                        $this->processedItem($this->items['Items'][$key]);
+                        $processed[$ask] = true;
+                    }
                 }
-                echo "-----------------------\r\n";
-                $ask = intval(ask("请选择要处理的媒体库"));
-                $key = $ask - 1;
-                if(!isset($this->items['Items'][$key])){
-                    logger("无效的选项：{$ask}");
-                }else{
+            }else{
+                logger('使用media参数：' . $this->getOption('media'));
+                $key = $this->getOption('media') -1;
+                if(isset($this->items['Items'][$key])){
                     $this->processedItem($this->items['Items'][$key]);
-                    $processed[$ask] = true;
+                }else{
+                    logger("无效的选项：" . $this->getOption('media'));
                 }
             }
         }
