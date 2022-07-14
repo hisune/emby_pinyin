@@ -306,7 +306,7 @@ by: hisune.com        |_____|______|__|             |_____|
     {
         $this->initCount();
         logger("开始处理 【{$item['Name']}】，选取文字后暂停，回车继续");
-        $this->renderFolder($item['Id']);
+        $this->renderFolder($item['Id'], $item['CollectionType'] ?? null);
         logger("已跳过：{$this->skipCount}，已处理：{$this->processCount}");
     }
 
@@ -316,14 +316,12 @@ by: hisune.com        |_____|______|__|             |_____|
         $this->skipCount = 0;
     }
 
-    private function renderFolder($id)
+    private function renderItems($items)
     {
-        $items = $this->sendRequest("Users/{$this->user['Id']}/Items", ['ParentId' => $id]);
-//        logger(json_encode($items), false);
         foreach($items['Items'] as $item){
             if(in_array($item['Type'], ['Folder', 'CollectionFolder'])){
-                $this->renderFolder($item['Id']);
-            }else if(in_array($item['Type'], ['Series', 'Movie', 'BoxSet'])){
+                $this->renderFolder($item['Id'], $item['CollectionType'] ?? null);
+            }else if(in_array($item['Type'], ['Series', 'Movie', 'BoxSet', 'Audio', 'MusicAlbum', 'MusicArtist'])){
                 // 获取item详情
                 $itemDetail = $this->sendRequest("Users/{$this->user['Id']}/Items/{$item['Id']}", [], [], false);
                 switch ($this->pinyinType){
@@ -358,6 +356,29 @@ by: hisune.com        |_____|______|__|             |_____|
                 echo "已跳过：{$this->skipCount}，已处理：{$this->processCount}\r";
             }
         }
+    }
+
+    private function renderFolder($id, $collectionType = null)
+    {
+        if($collectionType == 'music'){
+            // 专辑
+            $items = $this->sendRequest("Users/{$this->user['Id']}/Items", [
+                'IncludeItemTypes' => 'MusicAlbum',
+                'Recursive' => 'true',
+                'ParentId' => $id,
+            ]);
+            $this->renderItems($items);
+            // 艺术家
+            $items = $this->sendRequest("Artists", [
+                'ArtistType' => 'Artist,AlbumArtist',
+                'Recursive' => 'true',
+                'ParentId' => $id,
+                'userId' => $this->user['Id'],
+            ]);
+            $this->renderItems($items);
+        }
+        $items = $this->sendRequest("Users/{$this->user['Id']}/Items", ['ParentId' => $id]);
+        $this->renderItems($items);
     }
 
     private function sendRequest($uri, $params = [], $postData = [], $assoc = true)
