@@ -305,7 +305,8 @@ by: hisune.com        |_____|______|__|             |_____|
     private function processedItem($item)
     {
         $this->initCount();
-        logger("开始处理 【{$item['Name']}】，选取文字后暂停，回车继续");
+        $tips = PHP_OS_FAMILY === 'Windows' ? '，选取文字后暂停，回车继续' : '';
+        logger("开始处理 【{$item['Name']}】{$tips}");
         $this->renderFolder($item['Id'], $item['CollectionType'] ?? null);
         logger("已跳过：{$this->skipCount}，已处理：{$this->processCount}");
     }
