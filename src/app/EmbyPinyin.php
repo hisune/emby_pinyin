@@ -24,9 +24,19 @@ class EmbyPinyin
             'description' => '服务器编号',
             'value' => null,
         ],
+        'host' => [
+            'short' => 'h',
+            'description' => '指定服务器地址，配合key参数使用，例如：http://192.168.1.1:8096',
+            'value' => null,
+        ],
+        'key' => [
+            'short' => 'k',
+            'description' => '指定服务器API密钥，配合host参数使用',
+            'value' => null,
+        ],
         'type' => [
             'short' => 't',
-            'description' => '排序方式，1：首字母，2：全拼，3：前置字母，4：默认',
+            'description' => '排序方式，1：首字母，2：全拼，3：前置字母，4：服务器默认',
             'value' => null,
         ],
         'all' => [
@@ -40,7 +50,7 @@ class EmbyPinyin
             'value' => null,
         ],
         'help' => [
-            'short' => 'h',
+            'short' => 'H',
             'description' => '获取帮助',
             'value' => null,
         ],
@@ -69,7 +79,7 @@ by: hisune.com        |_____|______|__|             |_____|
 ----------------------------------------------------------------------\r\n";
         $this->selectServer();
         $this->saveHistory();
-        logger('开始获取用户信息');
+        logger(sprintf('地址: %s, API密钥: %s, 开始获取用户信息', $this->selected['host'], $this->getMaskKey($this->selected['key'])));
         $this->initUser();
         logger('当前服务器为：' . ($this->isJellyfin ? 'jellyfin' : 'emby') . '，开始获取媒体库信息');
         $this->initItems();
@@ -108,6 +118,12 @@ by: hisune.com        |_____|______|__|             |_____|
         return $this->options[$name]['value'];
     }
 
+    private function getMaskKey($key)
+    {
+        $keyLength = min(strlen($key), 24);
+        return substr($key, 0, -$keyLength) . str_repeat('*', $keyLength);
+    }
+
     protected function selectServer()
     {
         if(!file_exists($this->historyContentPath)) {
@@ -129,11 +145,10 @@ by: hisune.com        |_____|______|__|             |_____|
         }
         $this->historyContent = $historyContent;
         $count = count($this->historyContent);
-        if($this->getOption('server') === null){
+        if($this->getOption('server') === null && !$this->getOption('host')){
             echo "\r\n";
             foreach($this->historyContent as $key => $data){
-                $keyLength = min(strlen($data['key']), 24);
-                echo ($key + 1) . ") 地址：{$data['host']}\tAPI密钥：" . substr($data['key'], 0, -$keyLength) . str_repeat('*', $keyLength) . "\r\n";
+                echo ($key + 1) . ") 地址：{$data['host']}\tAPI密钥：" . $this->getMaskKey($data['key']) . "\r\n";
             }
             echo "0) 输入新的服务器地址和API密钥\r\n\r\n";
             $ask = ask("找到 $count 个历史服务器，输入编号直接选取(默认为1)，或编号前加减号-删除该配置项，例如：-1");
@@ -144,8 +159,16 @@ by: hisune.com        |_____|______|__|             |_____|
                 $this->selectByHistory($ask);
             }
         }else{
-            logger('使用server参数：' . $this->getOption('server'));
-            $this->selectByHistory($this->getOption('server'));
+            $host = $this->getOption('host');
+            $key = $this->getOption('key');
+            if($host && $key){
+                logger('使用自定义host和key参数');
+                $this->parseHost($host);
+                $this->selected['key'] = $key;
+            }else{
+                logger('使用server参数：' . $this->getOption('server'));
+                $this->selectByHistory($this->getOption('server'));
+            }
         }
     }
 
@@ -159,7 +182,12 @@ by: hisune.com        |_____|______|__|             |_____|
     {
         $ask = ask('请输入你的服务器地址，例如：http://192.168.1.1:8096，也可省略http://或端口（默认为http和8096）');
         if(!$ask) $this->selectHostByInput();
-        $parseUrl = parse_url($ask);
+        $this->parseHost($ask);
+    }
+
+    private function parseHost($host)
+    {
+        $parseUrl = parse_url($host);
         if(!isset($parseUrl['scheme'])) $parseUrl['scheme'] = 'http';
         if(!isset($parseUrl['port'])) $parseUrl['port'] = '8096';
         $this->selected['host'] = $parseUrl['scheme'] . '://' . ($parseUrl['host'] ?? $parseUrl['path']) . ':' . $parseUrl['port'];
