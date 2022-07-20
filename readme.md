@@ -4,7 +4,7 @@
 
 #### 特性
 - 自动保存历史服务器配置，方便下次执行
-- 一键处理所有媒体库或自定义媒体库处理
+- 一键处理所有媒体库或自定义媒体库
 - 同时支持emby和jellyfin
 
 ### 使用方法
@@ -26,7 +26,7 @@
 首次执行：
 
 ```sh
-composer create-project hisune/emby_pinyin:dev-master
+composer create-project hisune/emby_pinyin
 cd emby_pinyin
 composer pre-install
 composer start
