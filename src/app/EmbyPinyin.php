@@ -118,7 +118,7 @@ by: hisune.com        |_____|______|__|             |_____|
         return $this->options[$name]['value'];
     }
 
-    private function getMaskKey($key)
+    private function getMaskKey($key): string
     {
         $keyLength = min(strlen($key), 24);
         return substr($key, 0, -$keyLength) . str_repeat('*', $keyLength);
@@ -201,7 +201,7 @@ by: hisune.com        |_____|______|__|             |_____|
         $this->selectedByInput = true;
     }
 
-    private function selectByHistory($answer)
+    private function selectByHistory($answer): bool
     {
         $num = abs($answer);
         if(!isset($this->historyContent[$num - 1])){
@@ -226,9 +226,9 @@ by: hisune.com        |_____|______|__|             |_____|
         return true;
     }
 
-    private function writeHistory()
+    private function writeHistory(): void
     {
-        return file_put_contents($this->historyContentPath, json_encode($this->historyContent));
+        file_put_contents($this->historyContentPath, json_encode($this->historyContent));
     }
 
     protected function saveHistory()
@@ -350,7 +350,7 @@ by: hisune.com        |_____|______|__|             |_____|
         foreach($items['Items'] as $item){
             if(in_array($item['Type'], ['Folder', 'CollectionFolder'])){
                 $this->renderFolder($item['Id'], $item['CollectionType'] ?? null);
-            }else if(in_array($item['Type'], ['Series', 'Movie', 'BoxSet', 'Audio', 'MusicAlbum', 'MusicArtist'])){
+            }else if(in_array($item['Type'], ['Series', 'Movie', 'BoxSet', 'Audio', 'MusicAlbum', 'MusicArtist', 'Video', 'Photo'])){
                 // 获取item详情
                 $itemDetail = $this->sendRequest("Users/{$this->user['Id']}/Items/{$item['Id']}", [], [], false);
                 switch ($this->pinyinType){
@@ -368,7 +368,7 @@ by: hisune.com        |_____|______|__|             |_____|
                         $sortName = $this->pinyin->abbr($itemDetail->Name, PINYIN_KEEP_NUMBER|PINYIN_KEEP_ENGLISH);
                 }
                 if($itemDetail->SortName == $sortName){
-                    logger('跳过：' . $itemDetail->Name, false);
+                    logger('跳过，已处理：' . $itemDetail->Name, false);
                     $this->skipCount++;
                 }else{
                     if($this->isJellyfin){
@@ -382,8 +382,11 @@ by: hisune.com        |_____|______|__|             |_____|
                     $this->sendRequest("Items/{$item['Id']}", [], $itemDetail);
                     $this->processCount++;
                 }
-                echo "已跳过：{$this->skipCount}，已处理：{$this->processCount}\r";
+            }else{
+                logger('跳过，未知类型：' . json_encode($item), false);
+                $this->skipCount++;
             }
+            echo "已跳过：{$this->skipCount}，已处理：{$this->processCount}\r";
         }
     }
 
