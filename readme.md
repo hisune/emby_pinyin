@@ -109,7 +109,19 @@ Emby Server从4.7.9.0开始支持“新媒体已添加”的webhook事件，emby
 2. 确定请求参数：如果你执行且保存过服务器信息，使用server参数即可，例如：`?server=1`；你也可以直接使用host和key参数，指定服务器信息，例如：`?host=192.168.1.168&key=服务器API密钥`。两种方式必选一种。
 3. 设置Webhooks：打开emby管理后台，定位到`服务器`->`Webhooks`->`添加Webhooks`，输入自定义名称，url填写`http://localhost:9091/run.php`和第2步的请求参数组装的字符串，例如：`http://localhost:9091/run.php?server=1`
 
-推荐使用supervisor来管理你的webhooks server，示例ini配置如下：
+推荐使用supervisor来管理你的webhooks server，安装supervisor的方法以centos为例：
+```shell
+# 安装supervisor
+yum update -y
+yum -y install epel-release
+yum -y install supervisor
+systemctl start supervisord
+systemctl enable supervisord
+# 配置supervisor
+cd /etc/supervisord.d
+vim emby_pinyin.ini
+```
+示例ini配置如下，请自行修改emby_pinyin所在路径，及监听的IP和端口：
 ```ini
 [program:emby_pinyin]
 command=/usr/bin/php -S localhost:9091
@@ -118,6 +130,12 @@ stdout_logfile=/home/wwwroot/emby_pinyin/out.log
 directory=/home/wwwroot/emby_pinyin/
 autostart=true
 user=root
+```
+最后启动emby_pinyin：
+```shell
+supervisorctl update
+# 查看状态
+supervisorctl status
 ```
 
 ### 运行截图
