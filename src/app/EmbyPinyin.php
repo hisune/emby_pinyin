@@ -113,7 +113,7 @@ by: hisune.com        |_____|______|__|             |_____|
             $longOptions[] = $name . ($name == 'help' ? '' :':');
             $optionsMap[$option['short']] = $name;
         }
-        if($defaultOptions){
+        if(!is_null($defaultOptions)){
             $options = $this->checkedDefaultOptions($defaultOptions);
         }else{
             $options = getopt($shortOptions, $longOptions);
