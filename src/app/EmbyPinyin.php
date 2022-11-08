@@ -59,6 +59,14 @@ class EmbyPinyin
     public function __construct()
     {
         date_default_timezone_set('Asia/Shanghai');
+        if(isCliServer()){
+            $defaultOptions = $_GET;
+            logger("access_log\t" . json_encode([
+                'uri' => $_SERVER['REQUEST_URI'],
+                'get' => $_GET,
+                'post' => $_POST,
+            ]), false);
+        }
         $this->historyContentPath = getcwd() . '/var/storage/history.data';
         $historyContentDir = dirname($this->historyContentPath);
         if(!file_exists($historyContentDir)) @mkdir($historyContentDir, 0777, true);
@@ -66,9 +74,6 @@ class EmbyPinyin
             failure('错误：当前目录没有写入权限，请 更换目录 或 尝试以管理员模式运行：' . getcwd());
         }
         $this->pinyin = new Pinyin();
-        if(isCliServer()){
-            $defaultOptions = $_GET;
-        }
         $this->initOptions($defaultOptions ?? null);
     }
 
