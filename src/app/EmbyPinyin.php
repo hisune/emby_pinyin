@@ -66,7 +66,10 @@ class EmbyPinyin
             failure('错误：当前目录没有写入权限，请 更换目录 或 尝试以管理员模式运行：' . getcwd());
         }
         $this->pinyin = new Pinyin();
-        $this->initOptions();
+        if(isCliServer()){
+            $defaultOptions = $_GET;
+        }
+        $this->initOptions($defaultOptions ?? null);
     }
 
     public function run()
@@ -86,7 +89,21 @@ by: hisune.com        |_____|______|__|             |_____|
         $this->toPinyin();
     }
 
-    private function initOptions()
+    private function checkedDefaultOptions($defaultOptions)
+    {
+        if(!isset($defaultOptions['server']) && (!isset($defaultOptions['host']) && !isset($defaultOptions['key']))){
+            failure('请指定server参数或同时指定host、key参数');
+        }
+        if(!isset($defaultOptions['type'])){
+            $defaultOptions['type'] = 1;
+        }
+        if(!isset($defaultOptions['all'])){
+            $defaultOptions['all'] = 'n';
+        }
+        return $defaultOptions;
+    }
+
+    private function initOptions($defaultOptions = null)
     {
         $shortOptions = '';
         $longOptions = [];
@@ -96,7 +113,11 @@ by: hisune.com        |_____|______|__|             |_____|
             $longOptions[] = $name . ($name == 'help' ? '' :':');
             $optionsMap[$option['short']] = $name;
         }
-        $options = getopt($shortOptions, $longOptions);
+        if($defaultOptions){
+            $options = $this->checkedDefaultOptions($defaultOptions);
+        }else{
+            $options = getopt($shortOptions, $longOptions);
+        }
         foreach($options as $name => $option){
             if(isset($this->options[$name])){
                 $this->options[$name]['value'] = $option;
@@ -206,6 +227,7 @@ by: hisune.com        |_____|______|__|             |_____|
         $num = abs($answer);
         if(!isset($this->historyContent[$num - 1])){
             logger("\r\n编号：{$num} 无效，请重新选取");
+            if(isCliServer()) exit;
             sleep(1);
             $this->selectServer();
             return false;

@@ -20,13 +20,22 @@ function ask($topic)
     return trim($input);
 }
 
+function isCliServer(): bool
+{
+    return php_sapi_name() == 'cli-server';
+}
+
 function failure($msg)
 {
     logger($msg);
-    $i = 0;
-    while (true){
-        sleep(10);
-        $i++;
-        if($i >= 60) exit;
+    if(!isCliServer()){
+        $i = 0;
+        while (true){
+            sleep(10);
+            $i++;
+            if($i >= 60) exit;
+        }
+    }else{
+        exit;
     }
 }
