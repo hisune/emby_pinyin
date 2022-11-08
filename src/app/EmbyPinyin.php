@@ -164,6 +164,15 @@ by: hisune.com        |_____|______|__|             |_____|
 
     protected function selectServer()
     {
+        $host = $this->getOption('host');
+        $key = $this->getOption('key');
+        if($host && $key){
+            logger('使用自定义host和key参数');
+            $this->parseHost($host);
+            $this->selected['key'] = $key;
+            return true;
+        }
+
         if(!file_exists($this->historyContentPath)) {
             logger("未找到history.data文件", false);
             $this->selectByInput();
@@ -197,16 +206,8 @@ by: hisune.com        |_____|______|__|             |_____|
                 $this->selectByHistory($ask);
             }
         }else{
-            $host = $this->getOption('host');
-            $key = $this->getOption('key');
-            if($host && $key){
-                logger('使用自定义host和key参数');
-                $this->parseHost($host);
-                $this->selected['key'] = $key;
-            }else{
-                logger('使用server参数：' . $this->getOption('server'));
-                $this->selectByHistory($this->getOption('server'));
-            }
+            logger('使用server参数：' . $this->getOption('server'));
+            $this->selectByHistory($this->getOption('server'));
         }
     }
 
