@@ -96,6 +96,7 @@ Emby Server从4.7.9.0开始支持“新媒体已添加”的webhook事件，emby
 
 > 推荐在linux环境下执行webhooks server
 
+
 1. 开启服务：通过以下命令开启webhooks server:
 ```shell
 php -S localhost:9091
