@@ -90,8 +90,12 @@ by: hisune.com        |_____|______|__|             |_____|
         logger(sprintf('地址: %s, API密钥: %s, 开始获取用户信息', $this->selected['host'], $this->getMaskKey($this->selected['key'])));
         $this->initUser();
         logger('当前服务器为：' . ($this->isJellyfin ? 'jellyfin' : 'emby') . '，开始获取媒体库信息');
-        $this->initItems();
-        $this->toPinyin();
+        if(!isCliServer()){
+            $this->initItems();
+            $this->toPinyin();
+        }else{
+            $this->renderItems(['Items' => [$_POST['data']['Item']]]);
+        }
     }
 
     private function checkedDefaultOptions($defaultOptions)
@@ -102,8 +106,16 @@ by: hisune.com        |_____|______|__|             |_____|
         if(!isset($defaultOptions['type'])){
             $defaultOptions['type'] = 1;
         }
-        if(!isset($defaultOptions['all'])){
-            $defaultOptions['all'] = 'n';
+
+        $this->pinyinType = $defaultOptions['type'];
+        $defaultOptions['all'] = 'y';
+
+        if(!isset($_POST['data'])){
+            failure('Webhooks Server服务运行正常');
+        }
+        $_POST['data'] = json_decode($_POST['data'], true);
+        if(!isset($_POST['data']['Item'])){
+            failure('错误的webhook回调内容');
         }
         return $defaultOptions;
     }

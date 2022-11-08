@@ -98,6 +98,11 @@ Emby Server从4.7.9.0开始支持“新媒体已添加”的webhook事件，emby
 
 1. 开启服务：通过以下命令开启webhooks server:
     ```shell
+    # 安装emby_pinyin
+    composer create-project hisune/emby_pinyin
+    cd emby_pinyin
+    composer pre-install
+    # 启动http服务
     php -S localhost:9091
     ```
     如果你想监听局域网请求，可以将localhost换成当前执行命令的本机局域网ip，另外监听端口9091也可以自定义。
