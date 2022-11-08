@@ -91,6 +91,35 @@ linux&mac&windows等系统通用php环境举例：
 comopser start -- --server=1 --type=3 --all=n --media=2
 ```
 
+#### Webhooks Server
+Emby Server从4.7.9.0开始支持“新媒体已添加”的webhook事件，emby_pinyin也从1.0.0版本开始支持，使用webhooks server功能能实现添加媒体库内容后自动执行新内容的拼音排序，做到无人值守，无需手动运行。
+
+> 推荐在linux环境下执行webhooks server
+
+1. 开启服务：通过以下命令开启webhooks server:
+    ```shell
+    # 安装emby_pinyin
+    composer create-project hisune/emby_pinyin
+    cd emby_pinyin
+    composer pre-install
+    # 启动http服务
+    php -S localhost:9091
+    ```
+    如果你想监听局域网请求，可以将localhost换成当前执行命令的本机局域网ip，另外监听端口9091也可以自定义。
+2. 确定请求参数：如果你执行且保存过服务器信息，使用server参数即可，例如：`?server=1`；你也可以直接使用host和key参数，指定服务器信息，例如：`?host=192.168.1.168&key=服务器API密钥`。两种方式必选一种。
+3. 设置Webhooks：打开emby管理后台，定位到`服务器`->`Webhooks`->`添加Webhooks`，输入自定义名称，url填写`http://localhost:9091/run.php`和第2步的请求参数组装的字符串，例如：`http://localhost:9091/run.php?server=1`
+
+推荐使用supervisor来管理你的webhooks server，示例ini配置如下：
+```ini
+[program:emby_pinyin]
+command=/usr/bin/php -S localhost:9091
+stderr_logfile=/home/wwwroot/emby_pinyin/err.log
+stdout_logfile=/home/wwwroot/emby_pinyin/out.log
+directory=/home/wwwroot/emby_pinyin/
+autostart=true
+user=root
+```
+
 ### 运行截图
 
 ![](https://raw.githubusercontent.com/hisune/images/master/emby_pinyin_2.jpg)

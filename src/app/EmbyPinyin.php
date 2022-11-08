@@ -59,6 +59,14 @@ class EmbyPinyin
     public function __construct()
     {
         date_default_timezone_set('Asia/Shanghai');
+        if(isCliServer()){
+            $defaultOptions = $_GET;
+            logger("access_log\t" . json_encode([
+                'uri' => $_SERVER['REQUEST_URI'],
+                'get' => $_GET,
+                'post' => $_POST,
+            ]), false);
+        }
         $this->historyContentPath = getcwd() . '/var/storage/history.data';
         $historyContentDir = dirname($this->historyContentPath);
         if(!file_exists($historyContentDir)) @mkdir($historyContentDir, 0777, true);
@@ -66,7 +74,7 @@ class EmbyPinyin
             failure('错误：当前目录没有写入权限，请 更换目录 或 尝试以管理员模式运行：' . getcwd());
         }
         $this->pinyin = new Pinyin();
-        $this->initOptions();
+        $this->initOptions($defaultOptions ?? null);
     }
 
     public function run()
@@ -82,11 +90,37 @@ by: hisune.com        |_____|______|__|             |_____|
         logger(sprintf('地址: %s, API密钥: %s, 开始获取用户信息', $this->selected['host'], $this->getMaskKey($this->selected['key'])));
         $this->initUser();
         logger('当前服务器为：' . ($this->isJellyfin ? 'jellyfin' : 'emby') . '，开始获取媒体库信息');
-        $this->initItems();
-        $this->toPinyin();
+        if(!isCliServer()){
+            $this->initItems();
+            $this->toPinyin();
+        }else{
+            $this->renderItems(['Items' => [$_POST['data']['Item']]]);
+        }
     }
 
-    private function initOptions()
+    private function checkedDefaultOptions($defaultOptions)
+    {
+        if(!isset($defaultOptions['server']) && (!isset($defaultOptions['host']) && !isset($defaultOptions['key']))){
+            failure('请指定server参数或同时指定host、key参数');
+        }
+        if(!isset($defaultOptions['type'])){
+            $defaultOptions['type'] = 1;
+        }
+
+        $this->pinyinType = $defaultOptions['type'];
+        $defaultOptions['all'] = 'y';
+
+        if(!isset($_POST['data'])){
+            failure('Webhooks Server服务运行正常');
+        }
+        $_POST['data'] = json_decode($_POST['data'], true);
+        if(!isset($_POST['data']['Item'])){
+            failure('错误的webhook回调内容');
+        }
+        return $defaultOptions;
+    }
+
+    private function initOptions($defaultOptions = null)
     {
         $shortOptions = '';
         $longOptions = [];
@@ -96,7 +130,11 @@ by: hisune.com        |_____|______|__|             |_____|
             $longOptions[] = $name . ($name == 'help' ? '' :':');
             $optionsMap[$option['short']] = $name;
         }
-        $options = getopt($shortOptions, $longOptions);
+        if(!is_null($defaultOptions)){
+            $options = $this->checkedDefaultOptions($defaultOptions);
+        }else{
+            $options = getopt($shortOptions, $longOptions);
+        }
         foreach($options as $name => $option){
             if(isset($this->options[$name])){
                 $this->options[$name]['value'] = $option;
@@ -126,6 +164,15 @@ by: hisune.com        |_____|______|__|             |_____|
 
     protected function selectServer()
     {
+        $host = $this->getOption('host');
+        $key = $this->getOption('key');
+        if($host && $key){
+            logger('使用自定义host和key参数');
+            $this->parseHost($host);
+            $this->selected['key'] = $key;
+            return true;
+        }
+
         if(!file_exists($this->historyContentPath)) {
             logger("未找到history.data文件", false);
             $this->selectByInput();
@@ -159,16 +206,8 @@ by: hisune.com        |_____|______|__|             |_____|
                 $this->selectByHistory($ask);
             }
         }else{
-            $host = $this->getOption('host');
-            $key = $this->getOption('key');
-            if($host && $key){
-                logger('使用自定义host和key参数');
-                $this->parseHost($host);
-                $this->selected['key'] = $key;
-            }else{
-                logger('使用server参数：' . $this->getOption('server'));
-                $this->selectByHistory($this->getOption('server'));
-            }
+            logger('使用server参数：' . $this->getOption('server'));
+            $this->selectByHistory($this->getOption('server'));
         }
     }
 
@@ -206,6 +245,7 @@ by: hisune.com        |_____|______|__|             |_____|
         $num = abs($answer);
         if(!isset($this->historyContent[$num - 1])){
             logger("\r\n编号：{$num} 无效，请重新选取");
+            if(isCliServer()) exit;
             sleep(1);
             $this->selectServer();
             return false;
