@@ -111,7 +111,7 @@ Emby Server从4.7.9.0开始支持“新媒体已添加”的webhook事件，emby
 
 推荐使用supervisor来管理你的webhooks server，示例ini配置如下：
 ```ini
-[program:burst]
+[program:emby_pinyin]
 command=/usr/bin/php -S localhost:9091
 stderr_logfile=/home/wwwroot/emby_pinyin/err.log
 stdout_logfile=/home/wwwroot/emby_pinyin/out.log
