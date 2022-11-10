@@ -425,6 +425,7 @@ by: hisune.com        |_____|______|__|             |_____|
                     $itemDetail->ForcedSortName = $sortName;
                     // 修改
                     $this->sendRequest("Items/{$item['Id']}", [], $itemDetail);
+                    logger("完成修改\tid: {$item['Id']}, content: " . json_encode($itemDetail), false);
                     $this->processCount++;
                 }
             }else{
@@ -468,7 +469,7 @@ by: hisune.com        |_____|______|__|             |_____|
             }
             $client = new Client();
             $fullUrl = "{$this->selected['host']}/{$uri}?api_key={$this->selected['key']}{$paramsString}";
-            logger("url: {$fullUrl}, data: " . json_encode($postData), false);
+            logger("sendRequest request\turl: {$fullUrl}, data: " . json_encode($postData), false);
             if(!$postData){
                 $response = $client->get($fullUrl);
             }else{
@@ -477,6 +478,7 @@ by: hisune.com        |_____|______|__|             |_____|
                 ]);
             }
             $content = $response->getBody()->getContents();
+            logger("sendRequest response\turl: {$fullUrl}, content: " . $content, false);
             $statusCode = $response->getStatusCode();
             if($statusCode != 200 && $statusCode != 204){
                 failure('响应错误，检查您的参数：' . $statusCode . ' with ' . $content);
