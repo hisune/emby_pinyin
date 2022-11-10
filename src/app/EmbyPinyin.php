@@ -94,6 +94,9 @@ by: hisune.com        |_____|______|__|             |_____|
             $this->initItems();
             $this->toPinyin();
         }else{
+            // 如果是序列剧集，使用SeriesId
+            $_POST['data']['Item']['Id'] = $_POST['data']['Item']['SeriesId'];
+            $_POST['data']['Item']['Type'] = 'Series';
             $this->renderItems(['Items' => [$_POST['data']['Item']]]);
         }
     }
