@@ -95,8 +95,10 @@ by: hisune.com        |_____|______|__|             |_____|
             $this->toPinyin();
         }else{
             // 如果是序列剧集，使用SeriesId
-            $_POST['data']['Item']['Id'] = $_POST['data']['Item']['SeriesId'];
-            $_POST['data']['Item']['Type'] = 'Series';
+            if($_POST['data']['Item']['Type'] == 'Episode'){
+                $_POST['data']['Item']['Id'] = $_POST['data']['Item']['SeriesId'];
+                $_POST['data']['Item']['Type'] = 'Series';
+            }
             $this->renderItems(['Items' => [$_POST['data']['Item']]]);
         }
     }
