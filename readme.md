@@ -21,6 +21,13 @@
 
 ### 使用方法
 
+目录：
+- [windows系统使用方法](#windows系统使用方法)
+- [windows、linux及mac等系统通用php环境使用方法](#windowslinux及mac等系统通用php环境使用方法)
+- [拼音排序方式](#拼音排序方式)
+- [快速执行：参数化执行](#参数化执行)
+- [自动化执行：Webhooks Server](#webhooks-server)
+
 #### windows系统使用方法
 
 为方便没有windows php环境的用户，直接打包了exe程序执行：
