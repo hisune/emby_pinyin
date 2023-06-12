@@ -39,6 +39,11 @@ class EmbyPinyin
             'description' => '排序方式，1：首字母，2：全拼，3：前置字母，4：服务器默认',
             'value' => null,
         ],
+        'originaltitle' => [
+            'short' => 'o',
+            'description' => 'OriginalTitle字段改写，1：首字母，2：全拼，3：前置字母，4：服务器默认',
+            'value' => null,
+        ],
         'all' => [
             'short' => 'a',
             'description' => '是否处理所有媒体库，y是，n否',
@@ -390,6 +395,26 @@ by: hisune.com        |_____|______|__|             |_____|
         $this->skipCount = 0;
     }
 
+    private function getSortName($itemDetail, $type = null)
+    {
+        $type = is_null($type) ? $this->pinyinType : intval($type);
+        switch ($type){
+            case 2: // 全拼
+                $sortName = $this->pinyin->permalink($itemDetail->Name, '');
+                break;
+            case 3: // 前置字母
+                $pinyinAbbr = $this->pinyin->abbr($itemDetail->Name, PINYIN_KEEP_NUMBER|PINYIN_KEEP_ENGLISH);
+                $sortName = substr($pinyinAbbr, 0, 1) . $itemDetail->Name;
+                break;
+            case 4: // 默认
+                $sortName = $itemDetail->Name;
+                break;
+            default: // 首字母
+                $sortName = $this->pinyin->abbr($itemDetail->Name, PINYIN_KEEP_NUMBER|PINYIN_KEEP_ENGLISH);
+        }
+        return $sortName;
+    }
+
     private function renderItems($items)
     {
         foreach($items['Items'] as $item){
@@ -398,21 +423,14 @@ by: hisune.com        |_____|______|__|             |_____|
             }else if(in_array($item['Type'], ['Series', 'Movie', 'BoxSet', 'Audio', 'MusicAlbum', 'MusicArtist', 'Video', 'Photo'])){
                 // 获取item详情
                 $itemDetail = $this->sendRequest("Users/{$this->user['Id']}/Items/{$item['Id']}", [], [], false);
-                switch ($this->pinyinType){
-                    case 2: // 全拼
-                        $sortName = $this->pinyin->permalink($itemDetail->Name, '');
-                        break;
-                    case 3: // 前置字母
-                        $pinyinAbbr = $this->pinyin->abbr($itemDetail->Name, PINYIN_KEEP_NUMBER|PINYIN_KEEP_ENGLISH);
-                        $sortName = substr($pinyinAbbr, 0, 1) . $itemDetail->Name;
-                        break;
-                    case 4: // 默认
-                        $sortName = $itemDetail->Name;
-                        break;
-                    default: // 首字母
-                        $sortName = $this->pinyin->abbr($itemDetail->Name, PINYIN_KEEP_NUMBER|PINYIN_KEEP_ENGLISH);
+                $sortName = $this->getSortName($itemDetail);
+                $originalTitle = $this->getSortName($itemDetail, $this->getOption('originaltitle'));
+                $skip = $itemDetail->SortName == $sortName;
+                if($this->getOption('originaltitle') && isset($itemDetail->OriginalTitle) && $itemDetail->OriginalTitle != $originalTitle){
+                    $itemDetail->OriginalTitle = $originalTitle;
+                    $skip = false;
                 }
-                if($itemDetail->SortName == $sortName){
+                if($skip){
                     logger('跳过，已处理：' . $itemDetail->Name, false);
                     $this->skipCount++;
                 }else{
