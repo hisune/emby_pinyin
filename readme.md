@@ -58,6 +58,20 @@ composer start
 
 执行完毕以上命令后的操作步骤和windows版本一致
 
+#### Docker
+
+Build image:
+
+```sh
+docker build -t emby_pinyin .
+```
+
+运行：
+
+```sh
+docker run --rm -it emby_pinyin
+```
+
 #### 拼音排序方式
 以“测试”俩字为例，不同排序方式的最终结果如下(默认为首字母方式)：
 1. 首字母：cs
