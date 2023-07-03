@@ -1,13 +1,30 @@
-## Emby Pinyin
+# Emby Pinyin
 
 此工具能使emby或jellyfin支持电影、电视剧和音乐的拼音首字母排序和搜索，如果觉得此工具帮到你，可以点个Star⭐️！
 
-#### 特性
+## 目录
+- [Emby Pinyin](#emby-pinyin)
+  - [目录](#目录)
+  - [特性](#特性)
+  - [已支持的内容类型](#已支持的内容类型)
+  - [使用方法](#使用方法)
+    - [windows系统使用方法](#windows系统使用方法)
+    - [windows、linux及mac等系统通用php环境使用方法](#windowslinux及mac等系统通用php环境使用方法)
+    - [Docker](#docker)
+    - [Docker Webhook and Cron](#docker-webhook-and-cron)
+    - [拼音排序方式](#拼音排序方式)
+    - [拼音搜索](#拼音搜索)
+    - [参数化执行](#参数化执行)
+      - [Webhooks Server](#webhooks-server)
+  - [运行截图](#运行截图)
+  - [使用效果](#使用效果)
+
+## 特性
 - 自动保存历史服务器配置，方便下次执行
 - 一键处理所有媒体库或自定义媒体库
 - 同时支持emby和jellyfin
 
-#### 已支持的内容类型
+## 已支持的内容类型
 
 - [x] 电影
 - [x] 音乐
@@ -19,16 +36,9 @@
 - [x] 家庭视频与照片
 - [ ] 混合内容
 
-### 使用方法
+## 使用方法
 
-目录：
-- [windows系统使用方法](#windows系统使用方法)
-- [windows、linux及mac等系统通用php环境使用方法](#windowslinux及mac等系统通用php环境使用方法)
-- [拼音排序方式](#拼音排序方式)
-- [快速执行：参数化执行](#参数化执行)
-- [自动化执行：Webhooks Server](#webhooks-server)
-
-#### windows系统使用方法
+### windows系统使用方法
 
 为方便没有windows php环境的用户，直接打包了exe程序执行：
 
@@ -38,7 +48,7 @@
 4. 选择排序方式及要处理的媒体库（如不确定此工具对你的媒体库产生的影响，可自行选择一个媒体库处理，确认没问题后再处理所有媒体库，而不是一开始就处理所有媒体库）
 5. 等待处理完成
 
-#### windows、linux及mac等系统通用php环境使用方法
+### windows、linux及mac等系统通用php环境使用方法
 
 > 需要`PHP7.2`及以上版本环境，并修改`php.ini`的`phar.readonly`配置项为`Off`
 
@@ -58,7 +68,7 @@ composer start
 
 执行完毕以上命令后的操作步骤和windows版本一致
 
-#### Docker
+### Docker
 
 Build image:
 
@@ -72,19 +82,56 @@ docker build -t emby_pinyin .
 docker run --rm -it emby_pinyin
 ```
 
-#### 拼音排序方式
+### Docker Webhook and Cron
+
+镜像支持监听webhook服务，或通过crond定时执行排序
+
+Build image:
+
+```sh
+docker build -t emby_pinyin.webhook -f Dockerfile.webhook .
+```
+
+环境变量：
+
+|ENV|默认值|说明|
+|-|-|-|
+|JELLYFIN_WEBHOOK_ENABLED|0|是否开启webhook，默认关闭|
+|JELLYFIN_CRON_ENABLED|0|是否开启cron，默认关闭|
+|JELLYFIN_CRON_SCHEDULE|0 * * * *|cron执行周期，默认没个整点执行|
+|JELLYFIN_HOST|http://example:8096|jellyfin的host，必须改为自己的地址|
+|JELLYFIN_KEY|*****|jellyfin的key，必须改为自己的值|
+|JELLYFIN_SORT_TYPE|1|排序方式，参考[参数化执行](#参数化执行)|
+
+webhook监听80端口，请自行映射到host
+
+```sh
+docker run -d \
+    -e JELLYFIN_WEBHOOK_ENABLED=1 \
+    -e JELLYFIN_CRON_ENABLED=1 \
+    -e JELLYFIN_CRON_SCHEDULE="0 * * * *" \
+    -e JELLYFIN_HOST="http://example:8096" \
+    -e JELLYFIN_KEY="*****" \
+    -e JELLYFIN_SORT_TYPE=1 \
+    -p 8080:80 \
+    --name emby_pinyin emby_pinyin.webhook
+```
+
+执行`docker logs -f emby_pinyin`以及`docker exec -it emby_pinyin tail -f /var/log/cron`可查看cron执行日志
+
+### 拼音排序方式
 以“测试”俩字为例，不同排序方式的最终结果如下(默认为首字母方式)：
 1. 首字母：cs
 2. 全拼：ceshi
 3. 前置字母：c测试
 4. emby默认：测试
 
-#### 拼音搜索
+### 拼音搜索
 指定originaltitle参数，将修改OriginalTitle（即原标题）字段，从而实现拼音搜索。 originaltitle参数的取值和type参数一致，当传入值`4`时，会将OriginalTitle修改为和标题相同的值。
 
 > 注意：originaltitle参数修改后无法还原为原系统默认值，如你需要保留你媒体的原标题，请谨慎修改。
 
-#### 参数化执行
+### 参数化执行
 通过对程序传入一定的固定参数能实现：
 - 配合计划任务执行实现自动化的拼音转换功能（例如每隔n小时自动执行转换拼音任务）
 - 可以实现快速命令执行，例如每次运行的时候将server参数和type参数进行固定，而无需执行程序后手动选取
@@ -165,11 +212,11 @@ supervisorctl update
 supervisorctl status
 ```
 
-### 运行截图
+## 运行截图
 
 ![](https://raw.githubusercontent.com/hisune/images/master/emby_pinyin_2.jpg)
 
 
-### 使用效果
+## 使用效果
 
 ![](https://raw.githubusercontent.com/hisune/images/master/emby_pinyin_1.jpg)
