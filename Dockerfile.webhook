@@ -17,7 +17,8 @@ ENV JELLYFIN_HOST="http://example:8096"
 ENV JELLYFIN_KEY="*****"
 ENV JELLYFIN_SORT_TYPE=1
 
-RUN sed -i 's/http:\/\/archive.ubuntu.com/http:\/\/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+RUN touch /root/.vimrc && \
+    sed -i 's/http:\/\/archive.ubuntu.com/http:\/\/mirrors.aliyun.com/g' /etc/apt/sources.list && \
     sed -i 's/http:\/\/security.ubuntu.com/http:\/\/mirrors.aliyun.com/g' /etc/apt/sources.list && \
     apt update && \
     apt install php php-dev php-curl php-json php-mbstring php-zip -y  && \
