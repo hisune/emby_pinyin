@@ -100,7 +100,7 @@ docker build -t emby_pinyin.webhook -f Dockerfile.webhook .
 |CRON_ENABLED|0|是否开启cron，默认关闭|
 |CRON_SCHEDULE|0 * * * *|cron执行周期，默认每个整点执行|
 |HOST|http://example:8096|jellyfin的host，必须改为自己的地址|
-|KEY|*****|jellyfin的key，必须改为自己的值|
+|API_KEY|*****|jellyfin的key，必须改为自己的值|
 |SORT_TYPE|1|排序方式，参考[参数化执行](#参数化执行)|
 
 webhook监听80端口，请自行映射到host
