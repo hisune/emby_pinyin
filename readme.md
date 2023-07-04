@@ -96,23 +96,23 @@ docker build -t emby_pinyin.webhook -f Dockerfile.webhook .
 
 |ENV|默认值|说明|
 |-|-|-|
-|JELLYFIN_WEBHOOK_ENABLED|0|是否开启webhook，默认关闭|
-|JELLYFIN_CRON_ENABLED|0|是否开启cron，默认关闭|
-|JELLYFIN_CRON_SCHEDULE|0 * * * *|cron执行周期，默认没个整点执行|
-|JELLYFIN_HOST|http://example:8096|jellyfin的host，必须改为自己的地址|
-|JELLYFIN_KEY|*****|jellyfin的key，必须改为自己的值|
-|JELLYFIN_SORT_TYPE|1|排序方式，参考[参数化执行](#参数化执行)|
+|WEBHOOK_ENABLED|0|是否开启webhook，默认关闭|
+|CRON_ENABLED|0|是否开启cron，默认关闭|
+|CRON_SCHEDULE|0 * * * *|cron执行周期，默认每个整点执行|
+|HOST|http://example:8096|jellyfin的host，必须改为自己的地址|
+|KEY|*****|jellyfin的key，必须改为自己的值|
+|SORT_TYPE|1|排序方式，参考[参数化执行](#参数化执行)|
 
 webhook监听80端口，请自行映射到host
 
 ```sh
 docker run -d \
-    -e JELLYFIN_WEBHOOK_ENABLED=1 \
-    -e JELLYFIN_CRON_ENABLED=1 \
-    -e JELLYFIN_CRON_SCHEDULE="0 * * * *" \
-    -e JELLYFIN_HOST="http://example:8096" \
-    -e JELLYFIN_KEY="*****" \
-    -e JELLYFIN_SORT_TYPE=1 \
+    -e WEBHOOK_ENABLED=1 \
+    -e CRON_ENABLED=1 \
+    -e CRON_SCHEDULE="0 * * * *" \
+    -e HOST="http://example:8096" \
+    -e API_KEY="*****" \
+    -e SORT_TYPE=1 \
     -p 8080:80 \
     --name emby_pinyin emby_pinyin.webhook
 ```
@@ -181,7 +181,8 @@ Emby Server从4.7.9.0开始支持“新媒体已添加”的webhook事件，emby
     ```
     如果你想监听局域网请求，可以将localhost换成当前执行命令的本机局域网ip，另外监听端口9091也可以自定义。
 2. 确定请求参数：如果你执行且保存过服务器信息，使用server参数即可，例如：`?server=1`；你也可以直接使用host和key参数，指定服务器信息，例如：`?host=192.168.1.168&key=服务器API密钥`。两种方式必选一种。
-3. 设置Webhooks：打开emby管理后台，定位到`服务器`->`Webhooks`->`添加Webhooks`，输入自定义名称，url填写`http://localhost:9091/run.php`和第2步的请求参数组装的字符串，例如：`http://localhost:9091/run.php?server=1`
+3. emby设置Webhooks：打开emby管理后台，定位到`服务器`->`Webhooks`->`添加Webhooks`，输入自定义名称，url填写`http://localhost:9091/run.php`和第2步的请求参数组装的字符串，例如：`http://localhost:9091/run.php?server=1`
+4. jellyfin设置Webhooks：打开jellyfin管理后台定位到`控制台`->`插件`，安装weebhook插件，点击`Webhooks`->`Add Generic Destination`，输入自名称及url同emby;`Notification Type`选择`Item Added`，勾选`Send All Properties`
 
 推荐使用supervisor来管理你的webhooks server，安装supervisor的方法以centos为例：
 ```shell
