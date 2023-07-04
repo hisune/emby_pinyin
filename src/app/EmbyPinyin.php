@@ -69,11 +69,13 @@ class EmbyPinyin
             //Jellyfin的webhook插件, Generic请求的content-type为json
             if ($_SERVER["CONTENT_TYPE"] ?? "" == "application/json") {
                 $data = @json_decode(file_get_contents('php://input'), true);
-                $_POST['raw'] = $data;
-                $_POST['data'] = json_encode(['Item' => [
-                    'Type' => $data['ItemType'] ?? "",
-                    'Id' => $data['ItemId'] ?? "",
-                ]]);
+                if($data){
+                    $_POST['raw'] = $data;
+                    $_POST['data'] = json_encode(['Item' => [
+                        'Type' => $data['ItemType'] ?? "",
+                        'Id' => $data['ItemId'] ?? "",
+                    ]]);
+                }
             }
             $defaultOptions = $_GET;
             logger("access_log\t" . json_encode([
