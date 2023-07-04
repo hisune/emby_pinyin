@@ -213,6 +213,12 @@ supervisorctl update
 supervisorctl status
 ```
 
+## 贡献
+
+感谢以下的小伙伴们对于 emby_pinyin 项目的代码贡献，让这个项目变得越来越好！
+
+[![Contributors](https://opencollective.com/emby_pinyin/contributors.svg?width=890&button=false)](https://github.com/hisune/emby_pinyin/graphs/contributors)
+
 ## 运行截图
 
 ![](https://raw.githubusercontent.com/hisune/images/master/emby_pinyin_2.jpg)
