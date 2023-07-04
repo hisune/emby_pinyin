@@ -15,7 +15,7 @@
     - [拼音排序方式](#拼音排序方式)
     - [拼音搜索](#拼音搜索)
     - [参数化执行](#参数化执行)
-      - [Webhooks Server](#webhooks-server)
+    - [Webhooks Server](#webhooks-server)
   - [运行截图](#运行截图)
   - [使用效果](#使用效果)
 
@@ -165,7 +165,7 @@ linux&mac&windows等系统通用php环境举例：
 comopser start -- --server=1 --type=3 --all=n --media=2
 ```
 
-#### Webhooks Server
+### Webhooks Server
 Emby Server从4.7.9.0开始支持“新媒体已添加”的webhook事件，emby_pinyin也从1.0.0版本开始支持，使用webhooks server功能能实现添加媒体库内容后自动执行新内容的拼音排序，做到无人值守，无需手动运行。
 
 > 推荐在linux环境下执行webhooks server
