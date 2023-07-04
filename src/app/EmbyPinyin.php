@@ -435,7 +435,11 @@ by: hisune.com        |_____|______|__|             |_____|
                 $itemDetail = $this->sendRequest("Users/{$this->user['Id']}/Items/{$item['Id']}", [], [], false);
                 $sortName = $this->getSortName($itemDetail);
                 $originalTitle = $this->getSortName($itemDetail, $this->getOption('originaltitle'));
-                $skip = $itemDetail->SortName == $sortName;
+                if ($this->isJellyfin) {
+                    $skip = isset($itemDetail->ForcedSortName) && $itemDetail->ForcedSortName == $sortName;
+                } else {
+                    $skip = $itemDetail->SortName == $sortName;
+                }
                 if ($this->getOption('originaltitle') && isset($itemDetail->OriginalTitle) && $itemDetail->OriginalTitle != $originalTitle) {
                     $itemDetail->OriginalTitle = $originalTitle;
                     $skip = false;
