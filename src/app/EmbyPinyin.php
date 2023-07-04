@@ -1,4 +1,5 @@
 <?php
+
 namespace App;
 
 use GuzzleHttp\Client;
@@ -64,7 +65,18 @@ class EmbyPinyin
     public function __construct()
     {
         date_default_timezone_set('Asia/Shanghai');
-        if(isCliServer()){
+        if (isCliServer()) {
+            //Jellyfin的webhook插件, Generic请求的content-type为json
+            if ($_SERVER["CONTENT_TYPE"] ?? "" == "application/json") {
+                $data = @json_decode(file_get_contents('php://input'), true);
+                if($data){
+                    $_POST['raw'] = $data;
+                    $_POST['data'] = json_encode(['Item' => [
+                        'Type' => $data['ItemType'] ?? "",
+                        'Id' => $data['ItemId'] ?? "",
+                    ]]);
+                }
+            }
             $defaultOptions = $_GET;
             logger("access_log\t" . json_encode([
                 'uri' => $_SERVER['REQUEST_URI'],
@@ -74,8 +86,8 @@ class EmbyPinyin
         }
         $this->historyContentPath = getcwd() . '/var/storage/history.data';
         $historyContentDir = dirname($this->historyContentPath);
-        if(!file_exists($historyContentDir)) @mkdir($historyContentDir, 0777, true);
-        if(!is_writable($historyContentDir)){
+        if (!file_exists($historyContentDir)) @mkdir($historyContentDir, 0777, true);
+        if (!is_writable($historyContentDir)) {
             failure('错误：当前目录没有写入权限，请 更换目录 或 尝试以管理员模式运行：' . getcwd());
         }
         $this->pinyin = new Pinyin();
@@ -95,12 +107,12 @@ by: hisune.com        |_____|______|__|             |_____|
         logger(sprintf('地址: %s, API密钥: %s, 开始获取用户信息', $this->selected['host'], $this->getMaskKey($this->selected['key'])));
         $this->initUser();
         logger('当前服务器为：' . ($this->isJellyfin ? 'jellyfin' : 'emby') . '，开始获取媒体库信息');
-        if(!isCliServer()){
+        if (!isCliServer()) {
             $this->initItems();
             $this->toPinyin();
-        }else{
+        } else {
             // 如果是序列剧集，使用SeriesId
-            if($_POST['data']['Item']['Type'] == 'Episode'){
+            if ($_POST['data']['Item']['Type'] == 'Episode') {
                 $_POST['data']['Item']['Id'] = $_POST['data']['Item']['SeriesId'];
                 $_POST['data']['Item']['Type'] = 'Series';
             }
@@ -110,21 +122,21 @@ by: hisune.com        |_____|______|__|             |_____|
 
     private function checkedDefaultOptions($defaultOptions)
     {
-        if(!isset($defaultOptions['server']) && (!isset($defaultOptions['host']) && !isset($defaultOptions['key']))){
+        if (!isset($defaultOptions['server']) && (!isset($defaultOptions['host']) && !isset($defaultOptions['key']))) {
             failure('请指定server参数或同时指定host、key参数');
         }
-        if(!isset($defaultOptions['type'])){
+        if (!isset($defaultOptions['type'])) {
             $defaultOptions['type'] = 1;
         }
 
         $this->pinyinType = $defaultOptions['type'];
         $defaultOptions['all'] = 'y';
 
-        if(!isset($_POST['data'])){
+        if (!isset($_POST['data'])) {
             failure('Webhooks Server服务运行正常');
         }
         $_POST['data'] = json_decode($_POST['data'], true);
-        if(!isset($_POST['data']['Item'])){
+        if (!isset($_POST['data']['Item'])) {
             failure('错误的webhook回调内容');
         }
         return $defaultOptions;
@@ -135,27 +147,27 @@ by: hisune.com        |_____|______|__|             |_____|
         $shortOptions = '';
         $longOptions = [];
         $optionsMap = [];
-        foreach($this->options as $name => $option){
-            $shortOptions .= $option['short'] . ($name == 'help' ? '' :':');
-            $longOptions[] = $name . ($name == 'help' ? '' :':');
+        foreach ($this->options as $name => $option) {
+            $shortOptions .= $option['short'] . ($name == 'help' ? '' : ':');
+            $longOptions[] = $name . ($name == 'help' ? '' : ':');
             $optionsMap[$option['short']] = $name;
         }
-        if(!is_null($defaultOptions)){
+        if (!is_null($defaultOptions)) {
             $options = $this->checkedDefaultOptions($defaultOptions);
-        }else{
+        } else {
             $options = getopt($shortOptions, $longOptions);
         }
-        foreach($options as $name => $option){
-            if(isset($this->options[$name])){
+        foreach ($options as $name => $option) {
+            if (isset($this->options[$name])) {
                 $this->options[$name]['value'] = $option;
-            }elseif(isset($this->options[$optionsMap[$name]])){
+            } elseif (isset($this->options[$optionsMap[$name]])) {
                 $this->options[$optionsMap[$name]]['value'] = $option;
             }
         }
-        if($this->options['help']['value'] !== null){
+        if ($this->options['help']['value'] !== null) {
             echo "\r\n使用方法：emby [参数]\r\n";
-            foreach($this->options as $name => $option){
-                echo "-{$option['short']}, --{$name}\t\t"."{$option['description']}\r\n";
+            foreach ($this->options as $name => $option) {
+                echo "-{$option['short']}, --{$name}\t\t" . "{$option['description']}\r\n";
             }
             failure('');
         }
@@ -176,14 +188,14 @@ by: hisune.com        |_____|______|__|             |_____|
     {
         $host = $this->getOption('host');
         $key = $this->getOption('key');
-        if($host && $key){
+        if ($host && $key) {
             logger('使用自定义host和key参数');
             $this->parseHost($host);
             $this->selected['key'] = $key;
             return true;
         }
 
-        if(!file_exists($this->historyContentPath)) {
+        if (!file_exists($this->historyContentPath)) {
             logger("未找到history.data文件", false);
             $this->selectByInput();
             return;
@@ -193,7 +205,7 @@ by: hisune.com        |_____|______|__|             |_____|
         $historyContent = file_get_contents($this->historyContentPath);
         logger($historyContent, false);
         $historyContent = json_decode($historyContent, true);
-        if(!$historyContent){
+        if (!$historyContent) {
             logger("history.data文件格式不正确");
             copy($this->historyContentPath, $this->historyContentPath . '.' . time()); // 删除文件
             unlink($this->historyContentPath);
@@ -202,20 +214,20 @@ by: hisune.com        |_____|______|__|             |_____|
         }
         $this->historyContent = $historyContent;
         $count = count($this->historyContent);
-        if($this->getOption('server') === null && !$this->getOption('host')){
+        if ($this->getOption('server') === null && !$this->getOption('host')) {
             echo "\r\n";
-            foreach($this->historyContent as $key => $data){
+            foreach ($this->historyContent as $key => $data) {
                 echo ($key + 1) . ") 地址：{$data['host']}\tAPI密钥：" . $this->getMaskKey($data['key']) . "\r\n";
             }
             echo "0) 输入新的服务器地址和API密钥\r\n\r\n";
             $ask = ask("找到 $count 个历史服务器，输入编号直接选取(默认为1)，或编号前加减号-删除该配置项，例如：-1");
-            if(trim($ask) === '') $ask = 1;
-            if($ask == '0'){
+            if (trim($ask) === '') $ask = 1;
+            if ($ask == '0') {
                 $this->selectByInput();
-            }else{
+            } else {
                 $this->selectByHistory($ask);
             }
-        }else{
+        } else {
             logger('使用server参数：' . $this->getOption('server'));
             $this->selectByHistory($this->getOption('server'));
         }
@@ -230,22 +242,22 @@ by: hisune.com        |_____|______|__|             |_____|
     private function selectHostByInput()
     {
         $ask = ask('请输入你的服务器地址，例如：http://192.168.1.1:8096，也可省略http://或端口（默认为http和8096）');
-        if(!$ask) $this->selectHostByInput();
+        if (!$ask) $this->selectHostByInput();
         $this->parseHost($ask);
     }
 
     private function parseHost($host)
     {
         $parseUrl = parse_url($host);
-        if(!isset($parseUrl['scheme'])) $parseUrl['scheme'] = 'http';
-        if(!isset($parseUrl['port'])) $parseUrl['port'] = '8096';
+        if (!isset($parseUrl['scheme'])) $parseUrl['scheme'] = 'http';
+        if (!isset($parseUrl['port'])) $parseUrl['port'] = '8096';
         $this->selected['host'] = $parseUrl['scheme'] . '://' . ($parseUrl['host'] ?? $parseUrl['path']) . ':' . $parseUrl['port'];
     }
 
     private function selectKeyByInput()
     {
         $ask = ask('请输入你的API密钥，密钥需要使用【管理员账号】在管理后台的[高级]->[API密钥]进行创建和获取：');
-        if(!$ask) $this->selectKeyByInput();
+        if (!$ask) $this->selectKeyByInput();
         $this->selected['key'] = $ask;
         $this->selectedByInput = true;
     }
@@ -253,24 +265,24 @@ by: hisune.com        |_____|______|__|             |_____|
     private function selectByHistory($answer): bool
     {
         $num = abs($answer);
-        if(!isset($this->historyContent[$num - 1])){
+        if (!isset($this->historyContent[$num - 1])) {
             logger("\r\n编号：{$num} 无效，请重新选取");
-            if(isCliServer()) exit;
+            if (isCliServer()) exit;
             sleep(1);
             $this->selectServer();
             return false;
         }
-        if($answer < 0){ // 删除
+        if ($answer < 0) { // 删除
             unset($this->historyContent[$num - 1]);
             $this->historyContent = array_values($this->historyContent); // 重新排序
-            if(!$this->historyContent){
+            if (!$this->historyContent) {
                 unlink($this->historyContentPath);
-            }else{
+            } else {
                 $this->writeHistory();
             }
             logger("已删除编号：{$num} 的配置项");
             $this->selectServer();
-        }else{ // 选取
+        } else { // 选取
             $this->selected = $this->historyContent[$num - 1];
         }
         return true;
@@ -283,7 +295,7 @@ by: hisune.com        |_____|______|__|             |_____|
 
     protected function saveHistory()
     {
-        if($this->selectedByInput){
+        if ($this->selectedByInput) {
             $this->historyContent[] = $this->selected;
             $this->writeHistory();
         }
@@ -293,15 +305,15 @@ by: hisune.com        |_____|______|__|             |_____|
     {
         $users = $this->sendRequest('Users');
         logger(json_encode($users), false);
-        foreach($users as $user){
-            if($user['Policy']['IsAdministrator']){
+        foreach ($users as $user) {
+            if ($user['Policy']['IsAdministrator']) {
                 $this->user = $user;
-                if(isset($user['Policy']['AuthenticationProviderId']) && strpos($user['Policy']['AuthenticationProviderId'], 'Jellyfin') === 0){
+                if (isset($user['Policy']['AuthenticationProviderId']) && strpos($user['Policy']['AuthenticationProviderId'], 'Jellyfin') === 0) {
                     $this->isJellyfin = true;
                 }
             }
         }
-        if(!$this->user){
+        if (!$this->user) {
             failure('未找到管理员账户，请检查你的API KEY参数');
         }
     }
@@ -316,41 +328,41 @@ by: hisune.com        |_____|______|__|             |_____|
 
     protected function toPinyin()
     {
-        if($this->getOption('type') === null){
+        if ($this->getOption('type') === null) {
             echo "\r\n-----------------------\r\n";
             echo "1) 首字母\r\n2) 全拼\r\n3) 前置字母\r\n4) 默认\r\n";
             echo "-----------------------\r\n";
             $this->pinyinType = intval(ask("请选择拼音排序方式(默认为1)："));
             echo "\r\n";
-        }else{
+        } else {
             $this->pinyinType = intval($this->getOption('type'));
             logger('使用type参数：' . $this->pinyinType);
         }
-        if(!in_array($this->pinyinType, [1,2,3,4])){
+        if (!in_array($this->pinyinType, [1, 2, 3, 4])) {
             logger("无效的选项，将使用默认排序");
             $this->pinyinType = 1;
         }
-        if($this->getOption('all') === null){
+        if ($this->getOption('all') === null) {
             $auto = ask("是否自动处理所有媒体库？选是将自动处理所有媒体库，选否需要你自行选择处理哪些媒体库。(y/n,默认为n)");
-        }else{
+        } else {
             $auto = $this->getOption('all');
             logger('使用all参数：' . $auto);
         }
-        if($auto == 'y') { // 自动处理所有媒体库
-            foreach($this->items['Items'] as $item){
-                if(!$item['IsFolder']) {
+        if ($auto == 'y') { // 自动处理所有媒体库
+            foreach ($this->items['Items'] as $item) {
+                if (!$item['IsFolder']) {
                     logger('跳过非目录：' . $item['Name'], false);
                     continue;
                 }
                 $this->processedItem($item);
             }
-        }else{
-            if($this->getOption('media') === null){
+        } else {
+            if ($this->getOption('media') === null) {
                 $processed = [];
-                while(true){
+                while (true) {
                     echo "\r\n-----------------------\r\n";
-                    foreach($this->items['Items'] as $key => $item){
-                        if(!$item['IsFolder']) {
+                    foreach ($this->items['Items'] as $key => $item) {
+                        if (!$item['IsFolder']) {
                             logger('跳过非目录：' . $item['Name'], false);
                             continue;
                         }
@@ -361,19 +373,19 @@ by: hisune.com        |_____|______|__|             |_____|
                     echo "-----------------------\r\n";
                     $ask = intval(ask("请选择要处理的媒体库"));
                     $key = $ask - 1;
-                    if(!isset($this->items['Items'][$key])){
+                    if (!isset($this->items['Items'][$key])) {
                         logger("无效的选项：{$ask}");
-                    }else{
+                    } else {
                         $this->processedItem($this->items['Items'][$key]);
                         $processed[$ask] = true;
                     }
                 }
-            }else{
+            } else {
                 logger('使用media参数：' . $this->getOption('media'));
-                $key = $this->getOption('media') -1;
-                if(isset($this->items['Items'][$key])){
+                $key = $this->getOption('media') - 1;
+                if (isset($this->items['Items'][$key])) {
                     $this->processedItem($this->items['Items'][$key]);
-                }else{
+                } else {
                     logger("无效的选项：" . $this->getOption('media'));
                 }
             }
@@ -398,45 +410,45 @@ by: hisune.com        |_____|______|__|             |_____|
     private function getSortName($itemDetail, $type = null)
     {
         $type = is_null($type) ? $this->pinyinType : intval($type);
-        switch ($type){
+        switch ($type) {
             case 2: // 全拼
                 $sortName = $this->pinyin->permalink($itemDetail->Name, '');
                 break;
             case 3: // 前置字母
-                $pinyinAbbr = $this->pinyin->abbr($itemDetail->Name, PINYIN_KEEP_NUMBER|PINYIN_KEEP_ENGLISH);
+                $pinyinAbbr = $this->pinyin->abbr($itemDetail->Name, PINYIN_KEEP_NUMBER | PINYIN_KEEP_ENGLISH);
                 $sortName = substr($pinyinAbbr, 0, 1) . $itemDetail->Name;
                 break;
             case 4: // 默认
                 $sortName = $itemDetail->Name;
                 break;
             default: // 首字母
-                $sortName = $this->pinyin->abbr($itemDetail->Name, PINYIN_KEEP_NUMBER|PINYIN_KEEP_ENGLISH);
+                $sortName = $this->pinyin->abbr($itemDetail->Name, PINYIN_KEEP_NUMBER | PINYIN_KEEP_ENGLISH);
         }
         return $sortName;
     }
 
     private function renderItems($items)
     {
-        foreach($items['Items'] as $item){
-            if(in_array($item['Type'], ['Folder', 'CollectionFolder'])){
+        foreach ($items['Items'] as $item) {
+            if (in_array($item['Type'], ['Folder', 'CollectionFolder'])) {
                 $this->renderFolder($item['Id'], $item['CollectionType'] ?? null);
-            }else if(in_array($item['Type'], ['Series', 'Movie', 'BoxSet', 'Audio', 'MusicAlbum', 'MusicArtist', 'Video', 'Photo'])){
+            } else if (in_array($item['Type'], ['Series', 'Movie', 'BoxSet', 'Audio', 'MusicAlbum', 'MusicArtist', 'Video', 'Photo'])) {
                 // 获取item详情
                 $itemDetail = $this->sendRequest("Users/{$this->user['Id']}/Items/{$item['Id']}", [], [], false);
                 $sortName = $this->getSortName($itemDetail);
                 $originalTitle = $this->getSortName($itemDetail, $this->getOption('originaltitle'));
                 $skip = $itemDetail->SortName == $sortName;
-                if($this->getOption('originaltitle') && isset($itemDetail->OriginalTitle) && $itemDetail->OriginalTitle != $originalTitle){
+                if ($this->getOption('originaltitle') && isset($itemDetail->OriginalTitle) && $itemDetail->OriginalTitle != $originalTitle) {
                     $itemDetail->OriginalTitle = $originalTitle;
                     $skip = false;
                 }
-                if($skip){
+                if ($skip) {
                     logger('跳过，已处理：' . $itemDetail->Name, false);
                     $this->skipCount++;
-                }else{
-                    if($this->isJellyfin){
+                } else {
+                    if ($this->isJellyfin) {
                         unset($itemDetail->SortName);
-                    }else{
+                    } else {
                         $itemDetail->SortName = $sortName;
                         $itemDetail->LockedFields = ['SortName'];
                     }
@@ -446,7 +458,7 @@ by: hisune.com        |_____|______|__|             |_____|
                     logger("完成修改\tid: {$item['Id']}, content: " . json_encode($itemDetail), false);
                     $this->processCount++;
                 }
-            }else{
+            } else {
                 logger('跳过，未知类型：' . json_encode($item), false);
                 $this->skipCount++;
             }
@@ -456,7 +468,7 @@ by: hisune.com        |_____|______|__|             |_____|
 
     private function renderFolder($id, $collectionType = null)
     {
-        if($collectionType == 'music'){
+        if ($collectionType == 'music') {
             // 专辑
             $items = $this->sendRequest("Users/{$this->user['Id']}/Items", [
                 'IncludeItemTypes' => 'MusicAlbum',
@@ -479,18 +491,18 @@ by: hisune.com        |_____|______|__|             |_____|
 
     private function sendRequest($uri, $params = [], $postData = [], $assoc = true)
     {
-        try{
-            if($params){
+        try {
+            if ($params) {
                 $paramsString = '&' . http_build_query($params);
-            }else{
+            } else {
                 $paramsString = '';
             }
-            $client = new Client();
+            $client = new Client(['timeout' => 5]);
             $fullUrl = "{$this->selected['host']}/{$uri}?api_key={$this->selected['key']}{$paramsString}";
             logger("sendRequest request\turl: {$fullUrl}, data: " . json_encode($postData), false);
-            if(!$postData){
+            if (!$postData) {
                 $response = $client->get($fullUrl);
-            }else{
+            } else {
                 $response = $client->post($fullUrl, [
                     'json' => $postData,
                 ]);
@@ -498,13 +510,13 @@ by: hisune.com        |_____|______|__|             |_____|
             $content = $response->getBody()->getContents();
             logger("sendRequest response\turl: {$fullUrl}, content: " . $content, false);
             $statusCode = $response->getStatusCode();
-            if($statusCode != 200 && $statusCode != 204){
+            if ($statusCode != 200 && $statusCode != 204) {
                 failure('响应错误，检查您的参数：' . $statusCode . ' with ' . $content);
-            }else{
+            } else {
                 // logger($content, false);
                 return json_decode($content, $assoc);
             }
-        }catch (\Exception $e){
+        } catch (\Exception $e) {
             failure('响应错误，检查您的服务器地址配置：' . $e->getMessage());
         }
     }

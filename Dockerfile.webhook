@@ -1,0 +1,29 @@
+FROM phusion/baseimage:jammy-1.0.1
+
+WORKDIR /usr/src/emby_pinyin
+
+COPY --from=composer:lts /usr/bin/composer /usr/bin/composer
+COPY . /usr/src/emby_pinyin
+COPY build/service/ /etc/service/
+COPY build/cron/ /etc/cron.d/
+COPY build/init/ /etc/my_init.d/
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PHP_INI_DIR=/etc/php/8.1/cli
+ENV WEBHOOK_ENABLED=0
+ENV CRON_ENABLED=0
+ENV CRON_SCHEDULE="0 * * * *"
+ENV HOST="http://example:8096"
+ENV API_KEY="*****"
+ENV SORT_TYPE=1
+
+RUN touch /root/.vimrc && \
+    sed -i 's/http:\/\/archive.ubuntu.com/http:\/\/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+    sed -i 's/http:\/\/security.ubuntu.com/http:\/\/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+    apt update && \
+    apt install php php-dev php-curl php-json php-mbstring php-zip -y  && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
+    sed -i 's|;phar.readonly = On|phar.readonly = Off|' $PHP_INI_DIR/php.ini && \
+    composer pre-install
+
+EXPOSE 80
