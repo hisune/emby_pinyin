@@ -410,21 +410,54 @@ by: hisune.com        |_____|______|__|             |_____|
     private function getSortName($itemDetail, $type = null)
     {
         $type = is_null($type) ? $this->pinyinType : intval($type);
-        switch ($type) {
-            case 2: // 全拼
-                $sortName = $this->pinyin->permalink($itemDetail->Name, '');
-                break;
-            case 3: // 前置字母
-                $pinyinAbbr = $this->pinyin->abbr($itemDetail->Name, PINYIN_KEEP_NUMBER | PINYIN_KEEP_ENGLISH);
-                $sortName = substr($pinyinAbbr, 0, 1) . $itemDetail->Name;
-                break;
-            case 4: // 默认
-                $sortName = $itemDetail->Name;
-                break;
-            default: // 首字母
-                $sortName = $this->pinyin->abbr($itemDetail->Name, PINYIN_KEEP_NUMBER | PINYIN_KEEP_ENGLISH);
+        // 因为$itemDetail->Name可能包含中文，也可能包含其他语言，但$this->pinyin的方法仅支持中文，需要分别处理它的中文部分和非中文部分。
+        // 先声明结果
+        $sortName = "";
+        // 临时中文片段
+        $chinesePart = "";
+        // 从$itemDetail->Name第一个字符开始，循环判断每一个字符是否是中文字符。
+        for ($i = 0; $i < mb_strlen($itemDetail->Name); $i++) {
+            $char = mb_substr($itemDetail->Name, $i, 1);
+            // 使用正则表达式判断是否是中文字符
+            $isChinese = preg_match("/^[\x{4e00}-\x{9fa5}]+$/u", $char);
+
+            if ($isChinese) {
+                // 如果是，则复制拼接到$chinesePart中
+                $chinesePart .= $char;
+            }
+
+            if (!$isChinese || $i == mb_strlen($itemDetail->Name) - 1) {
+                // 如果不是中文，或者已经是最后一个字符，先判断$chinesePart是否为空
+                if (!empty($chinesePart)) {
+                    // 不为空，进行转换
+                    switch ($type) {
+                        case 2: // 全拼
+                            $sortName .= $this->pinyin->permalink($chinesePart, '');
+                            break;
+                        case 3: // 前置字母
+                            $pinyinAbbr = $this->pinyin->abbr($chinesePart, PINYIN_KEEP_NUMBER | PINYIN_KEEP_ENGLISH);
+                            $sortName .= substr($pinyinAbbr, 0, 1) . $itemDetail->Name;
+                            break;
+                        case 4: // 默认
+                            $sortName .= $itemDetail->Name;
+                            break;
+                        default: // 首字母
+                            $sortName .= $this->pinyin->abbr($chinesePart, PINYIN_KEEP_NUMBER | PINYIN_KEEP_ENGLISH);
+                    }
+                    // 清空$chinesePart
+                    $chinesePart = '';
+                }
+
+                if (!$isChinese) {
+                    // 如果字符不是中文，将字符直接拼接到$sortName
+                    $sortName .= $char;
+                }
+            }
+            // logger("sortName: " . $sortName . "\tchinesePart: " . $chinesePart);
         }
+        // logger($itemDetail->Name . "\t->\t" . $sortName);
         return $sortName;
+
     }
 
     private function renderItems($items)
