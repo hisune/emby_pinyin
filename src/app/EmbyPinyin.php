@@ -454,7 +454,7 @@ by: hisune.com        |_____|______|__|             |_____|
                         unset($itemDetail->SortName);
                     } else {
                         $itemDetail->SortName = $sortName;
-                        $itemDetail->LockedFields = ['SortName'];
+                        $itemDetail->LockedFields = $this->pinyinType !== 4 ? ['SortName'] : [];
                     }
                     $itemDetail->ForcedSortName = $sortName;
                     // 修改
