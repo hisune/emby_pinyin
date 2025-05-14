@@ -227,3 +227,6 @@ supervisorctl status
 ## 使用效果
 
 ![](https://raw.githubusercontent.com/hisune/images/master/emby_pinyin_1.jpg)
+
+## Sponsor
+Thanks to [zmto](https://www.zmto.com/) for providing VPS sponsorship.
